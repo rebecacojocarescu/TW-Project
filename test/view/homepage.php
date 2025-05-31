@@ -30,31 +30,31 @@
 
             <div class="pet-options">
                 <div class="pet-card">
-                    <a href="animals.php?type=cat">
+                    <a href="lista-animale.php?type=cat">
                         <img src="../stiluri/imagini/cat.png" alt="cat">
                     </a>
                     <span>cat</span>
                 </div>
                 <div class="pet-card">
-                    <a href="animals.php?type=dog">
+                    <a href="lista-animale.php?type=dog">
                         <img src="../stiluri/imagini/dog.png" alt="dog">
                     </a>
                      <span>dog</span>
                 </div>
             <div class="pet-card">
-                <a href="animals.php?type=bird">
+                <a href="lista-animale.php?type=bird">
                     <img src="../stiluri/imagini/bird.png" alt="bird">
                 </a>
                 <span>bird</span>
             </div>
             <div class="pet-card">
-                <a href="animals.php?type=fish">
+                <a href="lista-animale.php?type=fish">
                     <img src="../stiluri/imagini/fish.png" alt="fish">
                 </a>
                 <span>fish</span>
             </div>
             <div class="pet-card">
-                <a href="animals.php?type=reptile">
+                <a href="lista-animale.php?type=reptile">
                     <img src="../stiluri/imagini/reptilian.png" alt="reptilian">
                 </a>
                 <span>reptilian</span>

@@ -21,7 +21,6 @@
                 $errors[] = "Parola trebuie să aibă cel puțin 6 caractere";
             }
             
-            // Validare confirmare parolă
             if ($data['password'] !== $data['confirm_password']) {
                 $errors[] = "Parolele nu coincid";
             }
