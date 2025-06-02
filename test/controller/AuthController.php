@@ -68,11 +68,16 @@
 
             if($authenticated){
                 session_start();
+                $_SESSION['user_id'] = $authenticated['id'];
                 $_SESSION['user_name'] = $data['name'];
                 $_SESSION['user_surname'] = $data['surname'];
+                
+                $redirect = isset($_SESSION['return_to']) ? $_SESSION['return_to'] : 'homepage.php';
+                unset($_SESSION['return_to']);
+                
                 echo json_encode([
                     'success' => true,
-                    'redirect' => 'homepage.php'
+                    'redirect' => $redirect
                 ]);
             } else {
                 echo json_encode([

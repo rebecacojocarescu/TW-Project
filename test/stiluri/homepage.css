@@ -173,3 +173,39 @@ body, html {
   width: 278px;
 }
 
+/* Add these new styles for the plus button */
+.nav-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding-top: 30px;
+}
+
+.add-pet-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 20px;
+    background-color: #f16a16;
+    border-radius: 25px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    color: white;
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.add-pet-btn:hover {
+    background-color: #224453;
+    transform: scale(1.05);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+
+.plus-icon {
+    margin-right: 5px;
+    font-size: 20px;
+    font-weight: bold;
+    line-height: 1;
+}
+

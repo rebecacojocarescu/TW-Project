@@ -10,18 +10,23 @@
 
     <body>
         <header class="navbar">
+            <div class="hamburger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
 
-                <div class="hamburger" >
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                </div>
+            <div class="logo">Pow</div>
 
-             <div class="logo">Pow</div>
-
-             <a href="profile.html" class="profile-icon">
-                <img src="../stiluri/imagini/profileicon.png" alt="Profile" />
-             </a>
+            <div class="nav-right">
+                <a href="post-pet.php" class="add-pet-btn">
+                    <span class="plus-icon">+</span>
+                    <span>Add</span>
+                </a>
+                <a href="profile.html" class="profile-icon">
+                    <img src="../stiluri/imagini/profileicon.png" alt="Profile" />
+                </a>
+            </div>
         </header>
 
         <section class = "welcome">

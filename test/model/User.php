@@ -34,7 +34,7 @@
 
         public function authenticate($name, $surname, $password){
             try {
-                $sql = "SELECT password FROM users WHERE name = :name AND surname = :surname";
+                $sql = "SELECT id, password FROM users WHERE name = :name AND surname = :surname";
                 $stmt = oci_parse($this->conn, $sql);
                 
                 oci_bind_by_name($stmt, ':name', $name);
@@ -57,7 +57,11 @@
                 $verified = password_verify($password, $row['PASSWORD']);
                 error_log("Authentication attempt - Name: $name, Surname: $surname - Result: " . ($verified ? "Success" : "Failed"));
                 
-                return $verified;
+                if ($verified) {
+                    return ['id' => $row['ID']];
+                }
+                
+                return false;
             } catch (Exception $e) {
                 error_log("Error during authentication: " . $e->getMessage());
                 return false;

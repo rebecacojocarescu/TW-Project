@@ -384,3 +384,17 @@ BEGIN
     RETURN v_result;
 END;
 /
+
+-- Ștergem mai întâi înregistrările din tabelele copil pentru ID-urile < 80
+DELETE FROM rss_feed WHERE pet_id < 80;
+DELETE FROM medical_history WHERE pet_id < 80;
+DELETE FROM media WHERE pet_id < 80;
+DELETE FROM restrictions WHERE pet_id < 80;
+DELETE FROM feeding_schedule WHERE pet_id < 80;
+DELETE FROM adoptions WHERE pet_id < 80;
+
+-- Acum putem șterge din tabelul principal pets
+DELETE FROM pets WHERE id < 80;
+
+-- Commit the changes
+COMMIT;

@@ -1,6 +1,6 @@
 -- Script PL/SQL pentru afișarea formatată a datelor din toate tabelele
 SET SERVEROUTPUT ON SIZE UNLIMITED;
-SET LINESIZE 200;
+SET LINESIZE 300;
 SET PAGESIZE 999;
 
 DECLARE
@@ -22,12 +22,25 @@ DECLARE
         FROM users
         ORDER BY id;
         
-    -- 2. Cursor pentru PETS
+    -- 2. Cursor pentru PETS (actualizat cu noile câmpuri)
     CURSOR c_pets IS
         SELECT id, name, species, breed, age, gender, health_status, 
                SUBSTR(description, 1, 50) || CASE WHEN LENGTH(description) > 50 THEN '...' ELSE '' END AS description_short,
                CASE WHEN available_for_adoption = 1 THEN 'Da' ELSE 'Nu' END AS available,
-               adoption_address, owner_id
+               adoption_address, owner_id,
+               personality_description,
+               activity_description,
+               diet_description,
+               household_activity,
+               household_environment,
+               other_pets,
+               color,
+               marime,
+               CASE WHEN spayed_neutered = 1 THEN 'Da' ELSE 'Nu' END AS spayed_neutered,
+               time_at_current_home,
+               reason_for_rehoming,
+               CASE WHEN flea_treatment = 1 THEN 'Da' ELSE 'Nu' END AS flea_treatment,
+               current_owner_description
         FROM pets
         ORDER BY id;
         
@@ -121,28 +134,39 @@ BEGIN
     print_separator(100);
     
     ------------------------------------------
-    -- 2. Afișarea datelor din tabelul PETS
+    -- 2. Afișarea datelor din tabelul PETS (actualizat)
     ------------------------------------------
     DBMS_OUTPUT.PUT_LINE(CHR(10) || '2. ANIMALE' || CHR(10));
-    print_separator(120);
-    DBMS_OUTPUT.PUT_LINE('ID  | NUME       | SPECIE     | RASĂ       | VÂRSTĂ | GEN    | STARE SĂNĂTATE | DISPONIBIL | PROPRIETAR ID');
-    print_separator(120);
     
     FOR pet_rec IN c_pets LOOP
-        DBMS_OUTPUT.PUT_LINE(
-            RPAD(pet_rec.id, 4) || '| ' ||
-            RPAD(pet_rec.name, 11) || '| ' ||
-            RPAD(pet_rec.species, 11) || '| ' ||
-            RPAD(pet_rec.breed, 11) || '| ' ||
-            RPAD(pet_rec.age, 7) || '| ' ||
-            RPAD(pet_rec.gender, 7) || '| ' ||
-            RPAD(pet_rec.health_status, 15) || '| ' ||
-            RPAD(pet_rec.available, 10) || '| ' ||
-            pet_rec.owner_id
-        );
-        -- Afisarea descrierii pe o linie separată
-        DBMS_OUTPUT.PUT_LINE('     Descriere: ' || pet_rec.description_short);
-        DBMS_OUTPUT.PUT_LINE('     Adresa de adopție: ' || pet_rec.adoption_address);
+        print_separator(120);
+        DBMS_OUTPUT.PUT_LINE('ID: ' || pet_rec.id);
+        DBMS_OUTPUT.PUT_LINE('Nume: ' || pet_rec.name);
+        DBMS_OUTPUT.PUT_LINE('Specie: ' || pet_rec.species);
+        DBMS_OUTPUT.PUT_LINE('Rasă: ' || pet_rec.breed);
+        DBMS_OUTPUT.PUT_LINE('Vârstă: ' || pet_rec.age);
+        DBMS_OUTPUT.PUT_LINE('Gen: ' || pet_rec.gender);
+        DBMS_OUTPUT.PUT_LINE('Stare sănătate: ' || pet_rec.health_status);
+        DBMS_OUTPUT.PUT_LINE('Disponibil pentru adopție: ' || pet_rec.available);
+        DBMS_OUTPUT.PUT_LINE('Adresă adopție: ' || pet_rec.adoption_address);
+        DBMS_OUTPUT.PUT_LINE('ID Proprietar: ' || pet_rec.owner_id);
+        DBMS_OUTPUT.PUT_LINE('Descriere: ' || pet_rec.description_short);
+        
+        -- Noile câmpuri
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || '--- Informații detaliate ---');
+        DBMS_OUTPUT.PUT_LINE('Personalitate: ' || pet_rec.personality_description);
+        DBMS_OUTPUT.PUT_LINE('Activitate: ' || pet_rec.activity_description);
+        DBMS_OUTPUT.PUT_LINE('Dietă: ' || pet_rec.diet_description);
+        DBMS_OUTPUT.PUT_LINE('Activitate gospodărie: ' || pet_rec.household_activity);
+        DBMS_OUTPUT.PUT_LINE('Mediu gospodărie: ' || pet_rec.household_environment);
+        DBMS_OUTPUT.PUT_LINE('Alte animale: ' || pet_rec.other_pets);
+        DBMS_OUTPUT.PUT_LINE('Culoare: ' || pet_rec.color);
+        DBMS_OUTPUT.PUT_LINE('Mărime: ' || pet_rec.marime);
+        DBMS_OUTPUT.PUT_LINE('Sterilizat/Castrat: ' || pet_rec.spayed_neutered);
+        DBMS_OUTPUT.PUT_LINE('Timp la casa curentă: ' || pet_rec.time_at_current_home);
+        DBMS_OUTPUT.PUT_LINE('Motiv pentru relocare: ' || pet_rec.reason_for_rehoming);
+        DBMS_OUTPUT.PUT_LINE('Tratament purici: ' || pet_rec.flea_treatment);
+        DBMS_OUTPUT.PUT_LINE('Descriere proprietar curent: ' || pet_rec.current_owner_description);
         DBMS_OUTPUT.PUT_LINE('');
     END LOOP;
     print_separator(120);
@@ -273,5 +297,90 @@ BEGIN
     
     -- Mesaj final
     DBMS_OUTPUT.PUT_LINE(CHR(10) || '======== SFÂRȘIT RAPORT ========' || CHR(10));
+END;
+/
+CREATE OR REPLACE FUNCTION get_animals_by_type(p_type IN VARCHAR2) 
+RETURN SYS_REFCURSOR
+IS
+    v_result SYS_REFCURSOR;
+BEGIN
+    OPEN v_result FOR
+        SELECT *
+        FROM pets
+        WHERE LOWER(species) = LOWER(p_type);
+    
+    RETURN v_result;
+END;
+/
+CREATE OR REPLACE FUNCTION get_animals_by_gender(p_gender IN VARCHAR2)
+RETURN SYS_REFCURSOR
+IS
+    v_result SYS_REFCURSOR;
+BEGIN
+    OPEN v_result FOR
+        SELECT *
+        FROM pets
+        WHERE LOWER(gender) = LOWER(p_gender);
+    
+    RETURN v_result;
+END;
+/
+CREATE OR REPLACE FUNCTION get_animals_by_age_category(p_age_category IN VARCHAR2)
+RETURN SYS_REFCURSOR
+IS
+    v_result SYS_REFCURSOR;
+BEGIN
+    OPEN v_result FOR
+        SELECT *
+        FROM pets
+        WHERE 
+            (LOWER(p_age_category) = 'young' AND age < 2)
+            OR (LOWER(p_age_category) = 'adult' AND age BETWEEN 2 AND 7)
+            OR (LOWER(p_age_category) = 'senior' AND age >= 8)
+            OR p_age_category IS NULL;
+    
+    RETURN v_result;
+END;
+/
+CREATE OR REPLACE FUNCTION get_animals_by_size(p_size IN VARCHAR2)
+RETURN SYS_REFCURSOR
+IS
+    v_result SYS_REFCURSOR;
+BEGIN
+    OPEN v_result FOR
+        SELECT *
+        FROM pets
+        WHERE LOWER(breed) LIKE '%' || LOWER(p_size) || '%'
+           OR LOWER(description) LIKE '%' || LOWER(p_size) || '%';
+    
+    RETURN v_result;
+END;
+/
+CREATE OR REPLACE FUNCTION filter_animals(
+    p_type IN VARCHAR2,
+    p_gender IN VARCHAR2,
+    p_age_category IN VARCHAR2,
+    p_size IN VARCHAR2
+)
+RETURN SYS_REFCURSOR
+IS
+    v_result SYS_REFCURSOR;
+BEGIN
+    OPEN v_result FOR
+        SELECT *
+        FROM pets
+        WHERE (p_type IS NULL OR LOWER(species) = LOWER(p_type))
+        AND (p_gender IS NULL OR LOWER(gender) = LOWER(p_gender))
+        AND (p_age_category IS NULL OR 
+            (CASE 
+                WHEN p_age_category = 'young' AND age < 2 THEN 1
+                WHEN p_age_category = 'adult' AND age BETWEEN 2 AND 7 THEN 1
+                WHEN p_age_category = 'senior' AND age >= 8 THEN 1
+                WHEN p_age_category IS NULL THEN 1
+                ELSE 0
+            END) = 1)
+        AND (p_size IS NULL OR 1=1);
+    
+    RETURN v_result;
 END;
 /
