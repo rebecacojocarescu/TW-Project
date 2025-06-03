@@ -1,5 +1,6 @@
 <?php
 require_once '../config/database.php';
+require_once '../model/ImageHandler.php';
 session_start();
 
 // Verificăm dacă utilizatorul este autentificat
@@ -30,7 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             :household_environment, :other_pets, :color, :marime, :spayed_neutered,
             :time_at_current_home, :reason_for_rehoming, :flea_treatment,
             :current_owner_description
-        )";
+        ) RETURNING id INTO :inserted_id";
         
         $stmt = oci_parse($conn, $query);
         
@@ -60,45 +61,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         oci_bind_by_name($stmt, ":flea_treatment", $flea_treatment);
         oci_bind_by_name($stmt, ":current_owner_description", $_POST['current_owner_description']);
         
+        // Bind the output parameter for the inserted ID
+        $inserted_id = 0;
+        oci_bind_by_name($stmt, ":inserted_id", $inserted_id, -1, SQLT_INT);
+        
         // Executăm query-ul
         $result = oci_execute($stmt);
         
         if ($result) {
-            // Obținem ID-ul animalului nou adăugat
-            $pet_id_query = "SELECT MAX(id) as last_id FROM pets WHERE owner_id = :owner_id";
-            $stmt = oci_parse($conn, $pet_id_query);
-            oci_bind_by_name($stmt, ":owner_id", $_SESSION['user_id']);
-            oci_execute($stmt);
-            $row = oci_fetch_assoc($stmt);
-            $pet_id = $row['LAST_ID'];
-            
-            // Procesăm imaginile încărcate
-            if (isset($_FILES['pet_images'])) {
-                $upload_dir = "../uploads/pets/";
-                if (!file_exists($upload_dir)) {
-                    mkdir($upload_dir, 0777, true);
-                }
+            // Procesăm imaginile încărcate folosind ImageHandler
+            if (isset($_FILES['pet_images']) && !empty($_FILES['pet_images']['name'][0])) {
+                $imageHandler = new ImageHandler($conn);
+                $uploadResult = $imageHandler->uploadPetImages($inserted_id, $_FILES['pet_images']);
                 
-                foreach ($_FILES['pet_images']['tmp_name'] as $key => $tmp_name) {
-                    if ($_FILES['pet_images']['error'][$key] === 0) {
-                        $file_name = uniqid() . '_' . $_FILES['pet_images']['name'][$key];
-                        $file_path = $upload_dir . $file_name;
-                        
-                        if (move_uploaded_file($tmp_name, $file_path)) {
-                            // Inserăm informațiile despre imagine în baza de date
-                            $media_query = "INSERT INTO media (pet_id, type, url, upload_date) 
-                                          VALUES (:pet_id, 'image', :url, CURRENT_TIMESTAMP)";
-                            $stmt = oci_parse($conn, $media_query);
-                            $url = "uploads/pets/" . $file_name;
-                            oci_bind_by_name($stmt, ":pet_id", $pet_id);
-                            oci_bind_by_name($stmt, ":url", $url);
-                            oci_execute($stmt);
-                        }
+                if (!$uploadResult['success']) {
+                    // Log errors but continue
+                    foreach ($uploadResult['errors'] as $error) {
+                        error_log("Image upload error: " . $error);
                     }
                 }
             }
             
-            header('Location: pet-page.php?id=' . $pet_id);
+            header('Location: pet-page.php?id=' . $inserted_id);
             exit;
         }
         
@@ -118,15 +102,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </head>
 <body>
     <header class="navbar">
-        <div class="hamburger">
-            <span></span>
-            <span></span>
-            <span></span>
+        <div class="header-content">
+            <button class="menu-button">☰</button>
+            <h1>Pow</h1>
+            <a href="profile.php" class="profile-button">
+                <img src="../stiluri/imagini/profileicon.png" alt="Profile">
+            </a>
         </div>
-        <a href="homepage.php" class="logo">Pow</a>
-        <a href="profile.html" class="profile-icon">
-            <img src="../stiluri/imagini/profileicon.png" alt="Profile">
-        </a>
     </header>
 
     <main class="post-pet-container">

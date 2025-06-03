@@ -3,8 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Register</title>
+    <title>Register - Pow</title>
     <link rel="stylesheet" href="../stiluri/styles.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans&display=swap" rel="stylesheet">
     <style>
       .popup {
         display: none;
@@ -132,7 +133,6 @@
         var submitBtn = document.getElementById('submitBtn');
         var formData = new FormData(form);
         
-        // Validare de bază pe client
         var password = form.querySelector('[name="password"]').value;
         var confirmPassword = form.querySelector('[name="confirm_password"]').value;
         
@@ -141,11 +141,9 @@
           return false;
         }
         
-        // Adaugă clasa loading la buton
         submitBtn.classList.add('loading');
         submitBtn.disabled = true;
 
-        // Crează XMLHttpRequest
         var xhr = new XMLHttpRequest();
         xhr.open('POST', '../controller/AuthController.php', true);
 
@@ -158,10 +156,8 @@
               try {
                 var response = JSON.parse(xhr.responseText);
                 if (response.success) {
-                  // Redirecționare la login cu mesaj de succes
                   window.location.href = 'login.php?success=1';
                 } else {
-                  // Afișează lista de erori
                   showPopup(response.errors, 'error', true);
                 }
               } catch (e) {
@@ -177,7 +173,6 @@
         return false;
       }
 
-      // Validare email în timp real
       document.querySelector('input[name="email"]').addEventListener('input', function(e) {
         var email = e.target.value;
         var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -189,7 +184,6 @@
         }
       });
 
-      // Validare parole în timp real
       document.querySelector('input[name="confirm_password"]').addEventListener('input', function(e) {
         var password = document.querySelector('input[name="password"]').value;
         var confirmPassword = e.target.value;

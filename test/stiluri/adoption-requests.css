@@ -1,0 +1,166 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Josefin Sans', sans-serif;
+}
+
+body {
+    background-color: #f5f0e8;
+}
+
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 2rem;
+    background-color: #f5f0e8;
+}
+
+.hamburger {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    cursor: pointer;
+}
+
+.hamburger span {
+    width: 25px;
+    height: 3px;
+    background-color: #333;
+    display: block;
+}
+
+.logo {
+    font-size: 24px;
+    font-weight: bold;
+    color: #333;
+}
+
+.profile-icon img {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+}
+
+.title-banner {
+    background-color: #ff5722;
+    color: white;
+    padding: 1rem;
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.title-banner h1 {
+    font-size: 24px;
+    font-weight: normal;
+}
+
+.requests-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 1rem;
+}
+
+.request-card {
+    background-color: #26a69a;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.pet-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.pet-image {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.pet-info h2 {
+    font-size: 20px;
+    margin-bottom: 0.5rem;
+}
+
+.pet-info p {
+    font-size: 14px;
+    opacity: 0.9;
+}
+
+.action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.action-buttons button {
+    padding: 0.5rem 2rem;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: opacity 0.3s;
+}
+
+.action-buttons button:hover {
+    opacity: 0.9;
+}
+
+.see-form-btn {
+    background-color: #37474f;
+    color: white;
+}
+
+.accept-btn {
+    background-color: #ffc107;
+    color: black;
+}
+
+.decline-btn {
+    background-color: #ff5722;
+    color: white;
+}
+
+.pet-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.no-requests {
+    text-align: center;
+    padding: 2rem;
+    background-color: #26a69a;
+    border-radius: 10px;
+    color: white;
+}
+
+.no-requests p {
+    font-size: 18px;
+    opacity: 0.9;
+}
+
+@media (max-width: 600px) {
+    .request-card {
+        flex-direction: column;
+        text-align: center;
+        gap: 1rem;
+    }
+
+    .pet-info {
+        flex-direction: column;
+    }
+
+    .action-buttons {
+        width: 100%;
+    }
+} 

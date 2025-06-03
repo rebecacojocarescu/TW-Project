@@ -60,10 +60,9 @@ try {
         $media[] = $row;
     }
 
-    // Close statements
+    // Close statements but keep connection open
     oci_free_statement($stmt);
     oci_free_statement($media_stmt);
-    oci_close($conn);
 
 } catch (Exception $e) {
     echo "Error: " . $e->getMessage();
@@ -90,20 +89,24 @@ try {
 
         <div class="logo">Pow</div>
 
-        <a href="profile.html" class="profile-icon">
-            <img src="images/profileicon.png" alt="Profile" />
+        <a href="profile.php" class="profile-icon">
+            <img src="../stiluri/imagini/profileicon.png" alt="Profile" />
         </a>
     </header>
 
     <section class="pet-banner">
-        <h1>NAPO</h1>
+        <h1><?php echo htmlspecialchars($pet['NAME']); ?></h1>
     </section>
 
     <section class="pet-photos">
         <div class="photo-container">
-            <img src="images/napo1.png" alt="Fluffy photo 1" class="pet-photo">
-            <img src="images/napo2.png" alt="Fluffy photo 2" class="pet-photo">
-            <img src="images/napo1.png" alt="Fluffy photo 3" class="pet-photo">
+            <?php if (!empty($media)): ?>
+                <?php foreach ($media as $image): ?>
+                    <img src="../<?php echo htmlspecialchars($image['URL']); ?>" alt="<?php echo htmlspecialchars($pet['NAME']); ?> photo" class="pet-photo">
+                <?php endforeach; ?>
+            <?php else: ?>
+                <img src="../stiluri/imagini/<?php echo strtolower($pet['SPECIES']); ?>.png" alt="<?php echo htmlspecialchars($pet['NAME']); ?>" class="pet-photo">
+            <?php endif; ?>
         </div>
     </section>
 
@@ -160,12 +163,15 @@ try {
             <p><?php echo nl2br(htmlspecialchars($pet['CURRENT_OWNER_DESCRIPTION'])); ?></p>
         </div>
         <div class="adopt-section">
-            <?php if (!empty($media)): ?>
-                <img src="<?php echo htmlspecialchars($media[0]['URL']); ?>" class="cat-image">
-            <?php else: ?>
-                <img src="../stiluri/imagini/<?php echo strtolower($pet['SPECIES']); ?>.png" class="cat-image">
-            <?php endif; ?>
-            <button class="adopt-btn">Adopt Me</button>
+            <?php
+            // Use first image from the already fetched media array
+            if (!empty($media)) {
+                echo '<img src="../' . htmlspecialchars($media[0]['URL']) . '" class="cat-image" alt="' . htmlspecialchars($pet['NAME']) . '">';
+            } else {
+                echo '<img src="../stiluri/imagini/' . strtolower($pet['SPECIES']) . '.png" class="cat-image" alt="' . htmlspecialchars($pet['SPECIES']) . '">';
+            }
+            ?>
+            <button class="adopt-btn" onclick="window.location.href='formular.php?pet_id=<?php echo $pet_id; ?>'">Adopt Me</button>
         </div>
     </section>
 
@@ -182,5 +188,9 @@ try {
         </iframe>
     </section>
 
+<?php
+// Close the connection at the very end
+oci_close($conn);
+?>
 </body>
 </html>
