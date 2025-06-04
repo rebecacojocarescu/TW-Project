@@ -1,3 +1,33 @@
+<?php
+session_start();
+require_once '../model/User.php';
+
+$error = '';
+
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    $name = $_POST['name'] ?? '';
+    $surname = $_POST['surname'] ?? '';
+    $password = $_POST['password'] ?? '';
+
+    if (empty($name) || empty($surname) || empty($password)) {
+        $error = "All fields are required";
+    } else {
+        $user = new User();
+        $result = $user->authenticate($name, $surname, $password);
+
+        if ($result) {
+            $_SESSION['user_id'] = $result['id'];
+            $_SESSION['user_name'] = $name;
+            $_SESSION['user_surname'] = $surname;
+            header("Location: homepage.php");
+            exit;
+        } else {
+            $error = "Invalid credentials";
+        }
+    }
+}
+?>
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -6,77 +36,21 @@
     <title>Login - Pow</title>
     <link rel="stylesheet" href="../stiluri/styles.css" />
     <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans&display=swap" rel="stylesheet">
-    <style>
-      .popup {
-        display: none;
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        padding: 15px 25px;
-        border-radius: 5px;
-        color: white;
-        font-size: 14px;
-        z-index: 1000;
-        animation: slideIn 0.5s ease-out;
-      }
-
-      .popup.error {
-        background-color: #e74c3c;
-      }
-
-      .popup.success {
-        background-color: #2ecc71;
-      }
-
-      @keyframes slideIn {
-        from {
-          transform: translateX(100%);
-          opacity: 0;
-        }
-        to {
-          transform: translateX(0);
-          opacity: 1;
-        }
-      }
-
-      .popup.show {
-        display: block;
-      }
-
-      /* Loading spinner */
-      .login-button.loading {
-        position: relative;
-        color: transparent;
-      }
-
-      .login-button.loading::after {
-        content: '';
-        position: absolute;
-        width: 20px;
-        height: 20px;
-        top: 50%;
-        left: 50%;
-        margin: -10px 0 0 -10px;
-        border: 3px solid rgba(255, 255, 255, 0.3);
-        border-radius: 50%;
-        border-top-color: white;
-        animation: spin 1s ease-in-out infinite;
-      }
-
-      @keyframes spin {
-        to { transform: rotate(360deg); }
-      }
-    </style>
   </head>
   <body>
     <div class="login-container">
       <div class="login-box">
         <h1>LOGIN</h1>
         <div id="popup" class="popup"></div>
+        <?php if ($error): ?>
+          <div class="error-message">
+            <?php echo htmlspecialchars($error); ?>
+          </div>
+        <?php endif; ?>
         <form id="loginForm" onsubmit="return handleSubmit(event)">
           <input type="hidden" name="action" value="login">
-          <input type="text" name="name" placeholder="Name" class="input-field" required />
-          <input type="text" name="surname" placeholder="Surname" class="input-field" required />
+          <input type="text" name="name" placeholder="Name" class="input-field" required value="<?php echo isset($_POST['name']) ? htmlspecialchars($_POST['name']) : ''; ?>" />
+          <input type="text" name="surname" placeholder="Surname" class="input-field" required value="<?php echo isset($_POST['surname']) ? htmlspecialchars($_POST['surname']) : ''; ?>" />
           <input type="password" name="password" placeholder="Password" class="input-field" required />
           <button type="submit" class="login-button" id="submitBtn">LOGIN</button>
         </form>

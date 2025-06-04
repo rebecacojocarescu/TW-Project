@@ -1,30 +1,14 @@
 <?php
 session_start();
-require_once '../config/database.php';
+require_once '../controllers/AdoptionRequestController.php';
 
-if (!isset($_SESSION['user_id'])) {
-    header("Location: login.php");
+$controller = new AdoptionRequestController();
+$result = $controller->index();
+
+if (isset($result['error'])) {
+    echo "Error: " . $result['error'];
     exit;
 }
-
-try {
-    $conn = getConnection();
-    
-    // Create the ref cursor
-    $cursor = oci_new_cursor($conn);
-    
-    // Prepare the call to the function
-    $stmt = oci_parse($conn, "BEGIN :result := get_adoption_requests(:user_id); END;");
-    
-    // Bind the parameters
-    oci_bind_by_name($stmt, ":result", $cursor, -1, SQLT_RSET);
-    oci_bind_by_name($stmt, ":user_id", $_SESSION['user_id']);
-    
-    // Execute the statement
-    oci_execute($stmt);
-    oci_execute($cursor);
-
-    $has_requests = false;
 ?>
 
 <!DOCTYPE html>
@@ -35,13 +19,8 @@ try {
     <title>Adoption Requests - Pow</title>
     <link rel="stylesheet" href="../stiluri/adoption-requests.css">
     <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans&display=swap" rel="stylesheet">
-    <style>
-    /* ... existing code ... */
-    </style>
 </head>
 <body>
-    
-
     <div class="overlay"></div>
 
     <header class="navbar">
@@ -63,32 +42,15 @@ try {
     <div class="requests-container">
         <?php 
         $has_requests = false;
-        while ($row = oci_fetch_assoc($cursor)) { 
+        foreach ($result as $row) { 
             $has_requests = true;
+            $image_path = $controller->getImagePath($row['PET_IMAGE'], $row['SPECIES']);
         ?>
             <div class="request-card">
                 <div class="pet-info">
-                    <?php
-                    $image_path = '';
-                    error_log("Pet Image from DB: " . print_r($row['PET_IMAGE'], true));
-                    error_log("Species: " . $row['SPECIES']);
-                    
-                    if ($row['PET_IMAGE'] !== null) {
-                        $image_path = $row['PET_IMAGE'];
-                    } else {
-                        $species = strtolower($row['SPECIES']);
-                        $image_path = 'stiluri/imagini/' . $species . '.png';
-                    }
-                    error_log("Final image path: " . $image_path);
-                    ?>
                     <img src="../<?php echo htmlspecialchars($image_path); ?>" 
                          alt="<?php echo htmlspecialchars($row['PET_NAME']); ?>" 
                          class="pet-image">
-                    <!-- Debug display -->
-                    <div style="display: none;">
-                        Debug: Image path = <?php echo htmlspecialchars($image_path); ?><br>
-                        Raw image from DB = <?php echo htmlspecialchars(print_r($row['PET_IMAGE'], true)); ?>
-                    </div>
                     <div class="pet-details">
                         <h2><?php echo htmlspecialchars($row['PET_NAME']); ?></h2>
                         <p>Adoption request<br>coming from <?php echo htmlspecialchars($row['FIRST_NAME'] . ' ' . $row['LAST_NAME']); ?></p>
@@ -119,7 +81,7 @@ try {
     <script>
     function updateStatus(formId, status) {
         if (confirm('Are you sure you want to ' + status + ' this adoption request?')) {
-            fetch('update-adoption-status.php', {
+            fetch('../controllers/AdoptionFormController.php', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
@@ -165,17 +127,4 @@ try {
     });
     </script>
 </body>
-</html>
-
-<?php
-} catch (Exception $e) {
-    echo "Error: " . $e->getMessage();
-} finally {
-    if (isset($cursor)) {
-        oci_free_statement($cursor);
-    }
-    if (isset($conn)) {
-        oci_close($conn);
-    }
-}
-?> 
+</html> 

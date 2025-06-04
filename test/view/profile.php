@@ -1,80 +1,32 @@
 <?php
-require_once '../config/database.php';
+require_once '../controllers/UserController.php';
 session_start();
 
-// Verifică dacă utilizatorul este logat
 if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
     exit;
 }
 
 $userId = $_SESSION['user_id'];
+$controller = new UserController();
 $message = '';
 
-// Procesează actualizarea datelor
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    try {
-        $conn = getConnection();
-        
-        // Verifică parola actuală dacă a fost furnizată o parolă nouă
-        if (!empty($_POST['new_password'])) {
-            $check_pwd_query = "SELECT password FROM users WHERE id = :id";
-            $stmt = oci_parse($conn, $check_pwd_query);
-            oci_bind_by_name($stmt, ":id", $userId);
-            oci_execute($stmt);
-            $user_data = oci_fetch_assoc($stmt);
-            
-            if (!password_verify($_POST['current_password'], $user_data['PASSWORD'])) {
-                throw new Exception("Current password is incorrect");
-            }
-            
-            $password = password_hash($_POST['new_password'], PASSWORD_DEFAULT);
-        }
-        
-        // Actualizează datele utilizatorului
-        $query = "UPDATE users SET 
-                 name = :name,
-                 surname = :surname,
-                 email = :email,
-                 location = :location" .
-                 (!empty($_POST['new_password']) ? ", password = :password" : "") .
-                 " WHERE id = :id";
-                 
-        $stmt = oci_parse($conn, $query);
-        
-        // Bind parametrii
-        oci_bind_by_name($stmt, ":name", $_POST['name']);
-        oci_bind_by_name($stmt, ":surname", $_POST['surname']);
-        oci_bind_by_name($stmt, ":email", $_POST['email']);
-        oci_bind_by_name($stmt, ":location", $_POST['location']);
-        oci_bind_by_name($stmt, ":id", $userId);
-        
-        if (!empty($_POST['new_password'])) {
-            oci_bind_by_name($stmt, ":password", $password);
-        }
-        
-        if (oci_execute($stmt)) {
-            $message = "Profile updated successfully!";
-        } else {
-            $e = oci_error($stmt);
-            throw new Exception($e['message']);
-        }
-        
-    } catch (Exception $e) {
-        $message = "Error: " . $e->getMessage();
+    $result = $controller->updateProfile($userId, $_POST);
+    
+    if (isset($result['success'])) {
+        $message = $result['success'];
+    } else {
+        $message = $result['error'] ?? "An unknown error occurred";
     }
 }
 
-// Încarcă datele utilizatorului
-try {
-    $conn = getConnection();
-    $query = "SELECT * FROM users WHERE id = :id";
-    $stmt = oci_parse($conn, $query);
-    oci_bind_by_name($stmt, ":id", $userId);
-    oci_execute($stmt);
-    $user = oci_fetch_assoc($stmt);
-} catch (Exception $e) {
-    $message = "Error loading user data: " . $e->getMessage();
+$userData = $controller->getUserProfile($userId);
+if (isset($userData['error'])) {
+    $message = $userData['error'];
+} else {
+    $user = $userData['user'];
+    $adoptedPets = $userData['adoptedPets'];
 }
 ?>
 
@@ -145,41 +97,17 @@ try {
     <div class="adopted-pets">
         <h2>ADOPTED PETS</h2>
         <div class="pet-circles">
-            <?php
-            // Obține imaginile pentru formularele aprobate folosind funcția PL/SQL
-            $query = "DECLARE
-                        v_result SYS_REFCURSOR;
-                     BEGIN
-                        :result := get_approved_pet_image(:user_id);
-                     END;";
-            
-            $stmt = oci_parse($conn, $query);
-            
-            // Creează descriptor pentru cursor
-            $result = oci_new_cursor($conn);
-            
-            // Bind parametrii
-            oci_bind_by_name($stmt, ":result", $result, -1, SQLT_RSET);
-            oci_bind_by_name($stmt, ":user_id", $userId);
-            
-            // Execută query-ul
-            oci_execute($stmt);
-            oci_execute($result);
-
-            // Afișează imaginile
-            while ($row = oci_fetch_assoc($result)) {
-                echo '<div class="pet-circle">';
-                echo '<img src="../' . htmlspecialchars($row['IMAGE_URL']) . '" 
-                           alt="' . htmlspecialchars($row['PET_NAME']) . '"
-                           title="' . htmlspecialchars($row['PET_NAME']) . '">';
-                echo '</div>';
-            }
-            
-            // Eliberează resursele
-            oci_free_statement($result);
-            oci_free_statement($stmt);
-            oci_close($conn);
-            ?>
+            <?php if (!empty($adoptedPets)): ?>
+                <?php foreach ($adoptedPets as $pet): ?>
+                    <div class="pet-circle">
+                        <img src="../<?php echo htmlspecialchars($pet['IMAGE_URL']); ?>" 
+                             alt="<?php echo htmlspecialchars($pet['PET_NAME']); ?>"
+                             title="<?php echo htmlspecialchars($pet['PET_NAME']); ?>">
+                    </div>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <p>No pets adopted yet.</p>
+            <?php endif; ?>
         </div>
     </div>
 </body>

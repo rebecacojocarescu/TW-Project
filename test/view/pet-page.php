@@ -1,69 +1,20 @@
 <?php
-require_once '../config/database.php';
+session_start();
+require_once '../controllers/PetController.php';
 
-// Enable error reporting for debugging
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-// Get the pet ID from the URL
 $pet_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
-if ($pet_id <= 0) {
-    echo "Invalid pet ID";
-    exit;
-}
-
+$controller = new PetController();
 try {
-    // Get database connection
-    $conn = getConnection();
-    if (!$conn) {
-        throw new Exception("Database connection failed");
+    $result = $controller->showPetDetails($pet_id);
+    if (isset($result['error'])) {
+        throw new Exception($result['error']);
     }
-
-    // Fetch pet information
-    $query = "SELECT * FROM pets WHERE id = :pet_id";
-    $stmt = oci_parse($conn, $query);
-    if (!$stmt) {
-        $e = oci_error($conn);
-        throw new Exception("Parse failed: " . $e['message']);
-    }
-
-    oci_bind_by_name($stmt, ":pet_id", $pet_id);
-    $execute = oci_execute($stmt);
-    if (!$execute) {
-        $e = oci_error($stmt);
-        throw new Exception("Execute failed: " . $e['message']);
-    }
-
-    $pet = oci_fetch_assoc($stmt);
-    if (!$pet) {
-        throw new Exception("No pet found with ID: " . $pet_id);
-    }
-
-    // Fetch pet media
-    $media_query = "SELECT * FROM media WHERE pet_id = :pet_id";
-    $media_stmt = oci_parse($conn, $media_query);
-    if (!$media_stmt) {
-        $e = oci_error($conn);
-        throw new Exception("Media parse failed: " . $e['message']);
-    }
-
-    oci_bind_by_name($media_stmt, ":pet_id", $pet_id);
-    $media_execute = oci_execute($media_stmt);
-    if (!$media_execute) {
-        $e = oci_error($media_stmt);
-        throw new Exception("Media execute failed: " . $e['message']);
-    }
-
-    $media = array();
-    while ($row = oci_fetch_assoc($media_stmt)) {
-        $media[] = $row;
-    }
-
-    // Close statements but keep connection open
-    oci_free_statement($stmt);
-    oci_free_statement($media_stmt);
-
+    $pet = $result['pet'];
+    $media = $result['media'];
 } catch (Exception $e) {
     echo "Error: " . $e->getMessage();
     exit;
@@ -164,7 +115,6 @@ try {
         </div>
         <div class="adopt-section">
             <?php
-            // Use first image from the already fetched media array
             if (!empty($media)) {
                 echo '<img src="../' . htmlspecialchars($media[0]['URL']) . '" class="cat-image" alt="' . htmlspecialchars($pet['NAME']) . '">';
             } else {
@@ -187,10 +137,5 @@ try {
             referrerpolicy="no-referrer-when-downgrade">
         </iframe>
     </section>
-
-<?php
-// Close the connection at the very end
-oci_close($conn);
-?>
 </body>
 </html>

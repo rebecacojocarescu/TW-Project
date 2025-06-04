@@ -1,119 +1,36 @@
 <?php
 session_start();
-require_once '../config/database.php';
+require_once '../controllers/AdoptionFormController.php';
 
-// Check if user is logged in
-if (!isset($_SESSION['user_id'])) {
-    header("Location: login.php");
-    exit;
-}
+$controller = new AdoptionFormController();
+$controller->index();
 
+$errors = [];
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    try {
-        $conn = getConnection();
-        if (!$conn) {
-            throw new Exception("Database connection failed");
-        }
-
-        // Get the pet_id from URL and user_id from session
+    $errors = $controller->validateForm($_POST);
+    
+    if (empty($errors)) {
         $pet_id = isset($_GET['pet_id']) ? (int)$_GET['pet_id'] : 0;
-        $user_id = $_SESSION['user_id'];
-
-        // Prepare the SQL statement
-        $query = "INSERT INTO adoption_form (
-            pet_id, user_id, first_name, last_name, email, phone, 
-            street_address, city, country, postal_code,
-            pet_name_desired, has_yard, housing_status, has_pet_permission,
-            has_children, children_ages,
-            has_other_pets, other_pets_description,
-            hours_alone_per_day, reason_for_alone_time, adoption_reason,
-            form_submitted_date
-        ) VALUES (
-            :pet_id, :user_id, :first_name, :last_name, :email, :phone,
-            :street_address, :city, :country, :postal_code,
-            :pet_name_desired, :has_yard, :housing_status, :has_pet_permission,
-            :has_children, :children_ages,
-            :has_other_pets, :other_pets_description,
-            :hours_alone_per_day, :reason_for_alone_time, :adoption_reason,
-            SYSDATE
-        )";
-
-        $stmt = oci_parse($conn, $query);
+        $result = $controller->processForm($_POST, $pet_id, $_SESSION['user_id']);
         
-        // Convert radio button values to numbers for boolean fields
-        $has_yard = $_POST['yard'] === 'yes' ? 1 : 0;
-        $has_pet_permission = $_POST['landlord_permission'] === 'yes' ? 1 : 0;
-        $has_children = $_POST['children'] === 'yes' ? 1 : 0;
-        $has_other_pets = $_POST['current_pets'] === 'yes' ? 1 : 0;
-        
-        // Extract numeric value for hours_alone_per_day using regex
-        $hours_alone = 0;
-        if (preg_match('/(\d+)/', $_POST['pet_alone_time'], $matches)) {
-            $hours_alone = intval($matches[1]);
-        }
-        
-        // Store the full text as the reason
-        $reason_for_alone = $_POST['pet_alone_time'];
-        
-        // Bind all parameters
-        oci_bind_by_name($stmt, ":pet_id", $pet_id);
-        oci_bind_by_name($stmt, ":user_id", $user_id);
-        oci_bind_by_name($stmt, ":first_name", $_POST['first_name']);
-        oci_bind_by_name($stmt, ":last_name", $_POST['last_name']);
-        oci_bind_by_name($stmt, ":email", $_POST['email']);
-        oci_bind_by_name($stmt, ":phone", $_POST['phone']);
-        oci_bind_by_name($stmt, ":street_address", $_POST['street_address']);
-        oci_bind_by_name($stmt, ":city", $_POST['city']);
-        oci_bind_by_name($stmt, ":country", $_POST['country']);
-        oci_bind_by_name($stmt, ":postal_code", $_POST['postal_code']);
-        oci_bind_by_name($stmt, ":pet_name_desired", $_POST['pet_name']);
-        oci_bind_by_name($stmt, ":has_yard", $has_yard);
-        oci_bind_by_name($stmt, ":housing_status", $_POST['housing']);
-        oci_bind_by_name($stmt, ":has_pet_permission", $has_pet_permission);
-        oci_bind_by_name($stmt, ":has_children", $has_children);
-        oci_bind_by_name($stmt, ":children_ages", $_POST['children_details']);
-        oci_bind_by_name($stmt, ":has_other_pets", $has_other_pets);
-        oci_bind_by_name($stmt, ":other_pets_description", $_POST['pet_details']);
-        oci_bind_by_name($stmt, ":hours_alone_per_day", $hours_alone);
-        oci_bind_by_name($stmt, ":reason_for_alone_time", $reason_for_alone);
-        oci_bind_by_name($stmt, ":adoption_reason", $_POST['adoption_reason']);
-
-        $execute = oci_execute($stmt);
-        if (!$execute) {
-            $e = oci_error($stmt);
-            throw new Exception("Error saving form: " . $e['message']);
-        }
-
-        // Commit the transaction
-        oci_commit($conn);
-        
-        // Redirect to a success page or show success message
-        header("Location: adoption-success.php");
-        exit;
-
-    } catch (Exception $e) {
-        echo "Error: " . $e->getMessage();
-    } finally {
-        if (isset($stmt)) {
-            oci_free_statement($stmt);
-        }
-        if (isset($conn)) {
-            oci_close($conn);
+        if (isset($result['error'])) {
+            $errors[] = $result['error'];
         }
     }
 }
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-     <meta charset="UTF-8" />
+    <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Pet Adoption Form - Pow</title>
     <link rel="stylesheet" href="../stiluri/formular.css" />
     <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans&display=swap" rel="stylesheet">
 </head>
 <body>
-     <header class="navbar">
+    <header class="navbar">
         <div class="hamburger">
             <span></span>
             <span></span>
@@ -124,49 +41,62 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <img src="../stiluri/imagini/profileicon.png" alt="Profile" />
         </a>
     </header>
+
     <section class="formular-banner">
         <h1>PET ADOPTION FORM</h1>
     </section>
+
+    <?php if (!empty($errors)): ?>
+        <div class="error-messages">
+            <?php foreach ($errors as $error): ?>
+                <p class="error"><?php echo htmlspecialchars($error); ?></p>
+            <?php endforeach; ?>
+        </div>
+    <?php endif; ?>
+
     <section class="section-title">
         <h1>New Owner Information</h1>
     </section>
+
     <form class="adoption-form" method="POST" action="<?php echo $_SERVER['PHP_SELF'] . '?pet_id=' . (isset($_GET['pet_id']) ? $_GET['pet_id'] : ''); ?>">
         <div class="form-group two-col">
-             <label>First Name
-                 <input type="text" name="first_name" />
-             </label>
-             <label>Last Name
-                 <input type="text" name="last_name" />
-             </label>
+            <label>First Name
+                <input type="text" name="first_name" value="<?php echo isset($_POST['first_name']) ? htmlspecialchars($_POST['first_name']) : ''; ?>" />
+            </label>
+            <label>Last Name
+                <input type="text" name="last_name" value="<?php echo isset($_POST['last_name']) ? htmlspecialchars($_POST['last_name']) : ''; ?>" />
+            </label>
         </div>
+
         <div class="form-group two-col">
-             <label>Email
-                 <input type="email" name="email" placeholder="example@example.com" />
-             </label>
-             <label>Phone Number
-                 <input type="tel" name="phone" placeholder="(0000) 000 000" />
-             </label>
+            <label>Email
+                <input type="email" name="email" placeholder="example@example.com" value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ''; ?>" />
+            </label>
+            <label>Phone Number
+                <input type="tel" name="phone" placeholder="(0000) 000 000" value="<?php echo isset($_POST['phone']) ? htmlspecialchars($_POST['phone']) : ''; ?>" />
+            </label>
         </div>
+
         <div class="address-group">
             <label>Address
-                <input type="text" name="street_address" placeholder="Street Address" />
+                <input type="text" name="street_address" placeholder="Street Address" value="<?php echo isset($_POST['street_address']) ? htmlspecialchars($_POST['street_address']) : ''; ?>" />
             </label>
             <div class="city-country-row">
                 <label>City
-                    <input type="text" name="city" />
+                    <input type="text" name="city" value="<?php echo isset($_POST['city']) ? htmlspecialchars($_POST['city']) : ''; ?>" />
                 </label>
                 <label>Country
-                    <input type="text" name="country" />
+                    <input type="text" name="country" value="<?php echo isset($_POST['country']) ? htmlspecialchars($_POST['country']) : ''; ?>" />
                 </label>
             </div>
             <label>Postal/Zip Code
-                <input type="text" name="postal_code" />
+                <input type="text" name="postal_code" value="<?php echo isset($_POST['postal_code']) ? htmlspecialchars($_POST['postal_code']) : ''; ?>" />
             </label>
         </div>
 
         <div class="form-group">
             <label>Name of Pet You Wish to Adopt
-                <input type="text" name="pet_name" />
+                <input type="text" name="pet_name" value="<?php echo isset($_POST['pet_name']) ? htmlspecialchars($_POST['pet_name']) : ''; ?>" />
             </label>
         </div>
 
@@ -174,11 +104,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <label class="question-label">Do you have a yard?</label>
             <div class="radio-group">
                 <label class="radio-label">
-                    <input type="radio" name="yard" value="yes" />
+                    <input type="radio" name="yard" value="yes" <?php echo (isset($_POST['yard']) && $_POST['yard'] === 'yes') ? 'checked' : ''; ?> />
                     <span class="radio-text">Yes</span>
                 </label>
                 <label class="radio-label">
-                    <input type="radio" name="yard" value="no" />
+                    <input type="radio" name="yard" value="no" <?php echo (isset($_POST['yard']) && $_POST['yard'] === 'no') ? 'checked' : ''; ?> />
                     <span class="radio-text">No</span>
                 </label>
             </div>
@@ -188,11 +118,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <label class="question-label">Do you own or rent your place?</label>
             <div class="radio-group">
                 <label class="radio-label">
-                    <input type="radio" name="housing" value="own" />
+                    <input type="radio" name="housing" value="own" <?php echo (isset($_POST['housing']) && $_POST['housing'] === 'own') ? 'checked' : ''; ?> />
                     <span class="radio-text">Own</span>
                 </label>
                 <label class="radio-label">
-                    <input type="radio" name="housing" value="rent" />
+                    <input type="radio" name="housing" value="rent" <?php echo (isset($_POST['housing']) && $_POST['housing'] === 'rent') ? 'checked' : ''; ?> />
                     <span class="radio-text">Rent</span>
                 </label>
             </div>
@@ -202,11 +132,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <label class="question-label">If renting, do you have the landlord's permission to have a pet?</label>
             <div class="radio-group">
                 <label class="radio-label">
-                    <input type="radio" name="landlord_permission" value="yes" />
+                    <input type="radio" name="landlord_permission" value="yes" <?php echo (isset($_POST['landlord_permission']) && $_POST['landlord_permission'] === 'yes') ? 'checked' : ''; ?> />
                     <span class="radio-text">Yes</span>
                 </label>
                 <label class="radio-label">
-                    <input type="radio" name="landlord_permission" value="no" />
+                    <input type="radio" name="landlord_permission" value="no" <?php echo (isset($_POST['landlord_permission']) && $_POST['landlord_permission'] === 'no') ? 'checked' : ''; ?> />
                     <span class="radio-text">No</span>
                 </label>
             </div>
@@ -216,11 +146,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <label class="question-label">Are there any children in the home?</label>
             <div class="radio-group">
                 <label class="radio-label">
-                    <input type="radio" name="children" value="yes" />
+                    <input type="radio" name="children" value="yes" <?php echo (isset($_POST['children']) && $_POST['children'] === 'yes') ? 'checked' : ''; ?> />
                     <span class="radio-text">Yes</span>
                 </label>
                 <label class="radio-label">
-                    <input type="radio" name="children" value="no" />
+                    <input type="radio" name="children" value="no" <?php echo (isset($_POST['children']) && $_POST['children'] === 'no') ? 'checked' : ''; ?> />
                     <span class="radio-text">No</span>
                 </label>
             </div>
@@ -228,7 +158,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         <div class="form-group">
             <label>If yes, how many and how old?
-                <input type="text" name="children_details" />
+                <input type="text" name="children_details" value="<?php echo isset($_POST['children_details']) ? htmlspecialchars($_POST['children_details']) : ''; ?>" />
             </label>
         </div>
 
@@ -236,11 +166,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <label class="question-label">Do you own any pets?</label>
             <div class="radio-group">
                 <label class="radio-label">
-                    <input type="radio" name="current_pets" value="yes" />
+                    <input type="radio" name="current_pets" value="yes" <?php echo (isset($_POST['current_pets']) && $_POST['current_pets'] === 'yes') ? 'checked' : ''; ?> />
                     <span class="radio-text">Yes</span>
                 </label>
                 <label class="radio-label">
-                    <input type="radio" name="current_pets" value="no" />
+                    <input type="radio" name="current_pets" value="no" <?php echo (isset($_POST['current_pets']) && $_POST['current_pets'] === 'no') ? 'checked' : ''; ?> />
                     <span class="radio-text">No</span>
                 </label>
             </div>
@@ -248,19 +178,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         <div class="form-group">
             <label>If yes, what pets?
-                <input type="text" name="pet_details" />
+                <input type="text" name="pet_details" value="<?php echo isset($_POST['pet_details']) ? htmlspecialchars($_POST['pet_details']) : ''; ?>" />
             </label>
         </div>
 
         <div class="form-group">
             <label>How many hours per day would the pet be alone and why?
-                <textarea name="pet_alone_time" placeholder="Type here... (Please include the number of hours)"></textarea>
+                <textarea name="pet_alone_time" placeholder="Type here... (Please include the number of hours)"><?php echo isset($_POST['pet_alone_time']) ? htmlspecialchars($_POST['pet_alone_time']) : ''; ?></textarea>
             </label>
         </div>
 
         <div class="form-group">
             <label>Why do you want to adopt this pet?
-                <textarea name="adoption_reason" placeholder="Type here..."></textarea>
+                <textarea name="adoption_reason" placeholder="Type here..."><?php echo isset($_POST['adoption_reason']) ? htmlspecialchars($_POST['adoption_reason']) : ''; ?></textarea>
             </label>
         </div>
 
@@ -280,6 +210,5 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         <button type="submit" class="submit-btn">Submit</button>
     </form>
-
 </body>
-</html>
+</html> 

@@ -29,7 +29,6 @@ class ImageHandler {
         $uploadedFiles = [];
         $errors = [];
         
-        // First check if the pet exists
         if (!$this->checkPetExists($petId)) {
             return [
                 'success' => false,
@@ -38,7 +37,6 @@ class ImageHandler {
             ];
         }
         
-        // Create pet-specific directory if it doesn't exist
         $petDir = $this->uploadDir . $petId . DIRECTORY_SEPARATOR;
         if (!file_exists($petDir)) {
             if (!mkdir($petDir, 0777, true)) {
@@ -119,7 +117,6 @@ class ImageHandler {
     
     private function saveToDatabase($petId, $url) {
         try {
-            // First check if we already have this URL in the database
             $check_query = "SELECT COUNT(*) as count FROM media WHERE pet_id = :pet_id AND url = :url";
             $check_stmt = oci_parse($this->conn, $check_query);
             
@@ -139,7 +136,6 @@ class ImageHandler {
             
             oci_free_statement($check_stmt);
             
-            // If we get here, we can insert the new record
             $query = "INSERT INTO media (pet_id, type, url, upload_date) 
                      VALUES (:pet_id, 'photo', :url, CURRENT_TIMESTAMP)";
             $stmt = oci_parse($this->conn, $query);
@@ -195,13 +191,11 @@ class ImageHandler {
             
             $filePath = dirname(__DIR__) . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $row['URL']);
             
-            // Delete from database
             $query = "DELETE FROM media WHERE id = :id";
             $stmt = oci_parse($this->conn, $query);
             oci_bind_by_name($stmt, ":id", $imageId);
             
             if (oci_execute($stmt)) {
-                // If deleted from database, delete the physical file
                 if (file_exists($filePath)) {
                     unlink($filePath);
                 }
@@ -229,9 +223,7 @@ class ImageHandler {
     }
     
     private function sanitizeFileName($fileName) {
-        // Remove any character that isn't a word character, dash, or dot
         $fileName = preg_replace('/[^\w\-\.]/', '', $fileName);
-        // Ensure the filename is unique by adding a timestamp if needed
         return $fileName;
     }
 } 

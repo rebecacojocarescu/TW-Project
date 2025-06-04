@@ -1,30 +1,14 @@
 <?php
 session_start();
-require_once '../config/database.php';
+require_once '../controllers/AdoptionStatusController.php';
 
-if (!isset($_SESSION['user_id'])) {
-    header("Location: login.php");
+$controller = new AdoptionStatusController();
+$result = $controller->index();
+
+if (isset($result['error'])) {
+    echo "Error: " . $result['error'];
     exit;
 }
-
-try {
-    $conn = getConnection();
-    
-    // Create the ref cursor
-    $cursor = oci_new_cursor($conn);
-    
-    // Prepare the call to the function
-    $stmt = oci_parse($conn, "BEGIN :result := get_user_adoption_status(:user_id); END;");
-    
-    // Bind the parameters
-    oci_bind_by_name($stmt, ":result", $cursor, -1, SQLT_RSET);
-    oci_bind_by_name($stmt, ":user_id", $_SESSION['user_id']);
-    
-    // Execute the statement
-    oci_execute($stmt);
-    oci_execute($cursor);
-
-    $has_requests = false;
 ?>
 
 <!DOCTYPE html>
@@ -85,8 +69,6 @@ try {
             <a href="adoption-requests.php" class="requests-btn">
                 <span>Requests</span>
             </a>
-            <?php else: ?>
-           
             <?php endif; ?>
             <a href="profile.php" class="profile-icon">
                 <img src="../stiluri/imagini/profileicon.png" alt="Profile">
@@ -101,28 +83,14 @@ try {
     <div class="requests-container">
         <?php 
         $has_requests = false;
-        while ($row = oci_fetch_assoc($cursor)) { 
+        foreach ($result as $row) { 
             $has_requests = true;
-            
-            // Determine status class
-            $statusClass = 'status-' . strtolower($row['STATUS']);
-            
-            // Format date
-            $submittedDate = new DateTime($row['FORM_SUBMITTED_DATE']);
-            $formattedDate = $submittedDate->format('F j, Y');
+            $statusClass = $controller->getStatusClass($row['STATUS']);
+            $formattedDate = $controller->formatDate($row['FORM_SUBMITTED_DATE']);
+            $image_path = $controller->getImagePath($row['PET_IMAGE'], $row['SPECIES']);
         ?>
             <div class="request-card">
                 <div class="pet-info">
-                    <?php
-                    $image_path = '';
-                    if ($row['PET_IMAGE'] !== null) {
-                        $image_path = $row['PET_IMAGE'];
-                    } else {
-                        // Folosim imaginea speciei ca fallback
-                        $species = strtolower($row['SPECIES']);
-                        $image_path = 'stiluri/imagini/' . $species . '.png';
-                    }
-                    ?>
                     <img src="../<?php echo htmlspecialchars($image_path); ?>" 
                          alt="<?php echo htmlspecialchars($row['PET_NAME']); ?>" 
                          class="pet-image">
@@ -179,17 +147,4 @@ try {
     });
     </script>
 </body>
-</html>
-
-<?php
-} catch (Exception $e) {
-    echo "Error: " . $e->getMessage();
-} finally {
-    if (isset($cursor)) {
-        oci_free_statement($cursor);
-    }
-    if (isset($conn)) {
-        oci_close($conn);
-    }
-}
-?> 
+</html> 

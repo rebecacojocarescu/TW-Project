@@ -71,23 +71,19 @@
           require_once('../config/database.php');
           require_once('../models/Animal.php');
 
-          // Get all filter parameters
           $type = $_GET['type'] ?? null;
           $gender = $_GET['sex'] ?? null;
           $age = $_GET['age'] ?? null;
           $size = $_GET['weight'] ?? null;
           
-          // Get filtered animals
           $animals = Animal::filterAnimals($type, $gender, $age, $size);
           
           if (empty($animals)) {
               echo '<div class="no-results">No animals found matching your criteria.</div>';
           } else {
-              // Get database connection for media queries
               $conn = getConnection();
               
               foreach ($animals as $animal) {
-                  // Get first image for this pet
                   $query = "SELECT url FROM media WHERE pet_id = :pet_id AND type = 'photo' AND ROWNUM = 1";
                   $stmt = oci_parse($conn, $query);
                   oci_bind_by_name($stmt, ":pet_id", $animal['id']);
@@ -99,7 +95,6 @@
                   echo '<div class="card">';
                   echo '<h3>' . htmlspecialchars($animal['name']) . '</h3>';
                   
-                  // Display first image from database or default species image
                   if ($image && isset($image['URL'])) {
                       echo '<img src="../' . htmlspecialchars($image['URL']) . '" alt="' . htmlspecialchars($animal['name']) . '" />';
                   } else {
@@ -128,7 +123,6 @@
                   echo '</a>';
               }
               
-              // Close the connection
               oci_close($conn);
           }
           ?>

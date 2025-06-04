@@ -262,7 +262,7 @@ try {
     <?php if ($is_pet_owner): ?>
     <script>
         function updateStatus(formId, status) {
-            fetch('../controllers/update-adoption-status.php', {
+            fetch('../controllers/AdoptionFormController.php', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
@@ -289,7 +289,6 @@ try {
 
 <?php
 try {
-    // Empty try block since we just need cleanup
 } finally {
     if (isset($stmt)) {
         oci_free_statement($stmt);

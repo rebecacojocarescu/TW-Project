@@ -19,28 +19,66 @@ class PetController {
     
     public function showPetDetails($id) {
         try {
-            // Validare ID
             $pet_id = (int)$id;
             if ($pet_id <= 0) {
-                throw new Exception("Invalid pet ID");
+                return ['error' => "Invalid pet ID"];
             }
             
-            // Obține informațiile despre animal
             $pet = $this->petModel->getPetById($pet_id);
             if (!$pet) {
-                throw new Exception("Pet not found");
+                return ['error' => "Pet not found"];
             }
             
-            // Obține media asociată
             $media = $this->petModel->getPetMedia($pet_id);
             
-            // Încarcă view-ul
-            require_once '../views/pets/show.php';
+            return [
+                'pet' => $pet,
+                'media' => $media
+            ];
             
         } catch (Exception $e) {
-            // În caz de eroare, redirecționează către pagina de listă
-            header("Location: lista-animale.php");
-            exit;
+            return ['error' => $e->getMessage()];
+        }
+    }
+
+    public function createPet($data, $files = null) {
+        try {
+            $requiredFields = [
+                'name', 'species', 'breed', 'age', 'gender', 'health_status',
+                'personality_description', 'activity_description', 'diet_description',
+                'household_activity', 'household_environment', 'other_pets',
+                'color', 'marime', 'time_at_current_home', 'reason_for_rehoming',
+                'current_owner_description', 'adoption_address'
+            ];
+
+            foreach ($requiredFields as $field) {
+                if (!isset($data[$field]) || empty(trim($data[$field]))) {
+                    return ['error' => "Field {$field} is required"];
+                }
+            }
+
+            $data['spayed_neutered'] = isset($data['spayed_neutered']) ? 1 : 0;
+            $data['flea_treatment'] = isset($data['flea_treatment']) ? 1 : 0;
+
+            $pet_id = $this->petModel->createPet($data);
+            if (!$pet_id) {
+                return ['error' => "Failed to create pet"];
+            }
+
+            if ($files && isset($files['pet_images']) && !empty($files['pet_images']['name'][0])) {
+                $uploadResult = $this->petModel->uploadPetImages($pet_id, $files['pet_images']);
+                if (!$uploadResult['success']) {
+                    error_log("Image upload errors for pet {$pet_id}: " . implode(", ", $uploadResult['errors']));
+                }
+            }
+
+            return [
+                'success' => true,
+                'pet_id' => $pet_id
+            ];
+
+        } catch (Exception $e) {
+            return ['error' => $e->getMessage()];
         }
     }
 } 

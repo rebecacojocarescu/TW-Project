@@ -1,5 +1,8 @@
 <?php
 session_start();
+require_once '../controllers/NotificationController.php';
+$notificationController = new NotificationController();
+$unreadCount = $notificationController->getUnreadCount();
 ?>
 <!DOCTYPE html>
 <html lang = "en">
@@ -9,6 +12,36 @@ session_start();
          <title>Pow - Pet Adoption</title>
          <link rel="stylesheet" href="../stiluri/homepage.css" />
           <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans&display=swap" rel="stylesheet">
+          <style>
+            .notify-btn {
+                display: flex;
+                align-items: center;
+                gap: 5px;
+                background-color: #ff5a00;
+                color: white;
+                padding: 8px 15px;
+                border-radius: 20px;
+                text-decoration: none;
+                position: relative;
+            }
+
+            .notify-btn:hover {
+                background-color: #e65100;
+            }
+
+            .notify-count {
+                position: absolute;
+                top: -5px;
+                right: -5px;
+                background-color: #ffc107;
+                color: black;
+                border-radius: 50%;
+                padding: 2px 6px;
+                font-size: 12px;
+                min-width: 16px;
+                text-align: center;
+            }
+         </style>
     </head>
 
     <body>
@@ -24,6 +57,14 @@ session_start();
                 <?php if (!isset($_SESSION['is_admin']) || !$_SESSION['is_admin']): ?>
                 <a href="adoption-status.php" class="requests-btn">
                     <span>My Adoptions</span>
+                </a>
+                <?php endif; ?>
+                <?php if (isset($_SESSION['user_id'])): ?>
+                <a href="notifications.php" class="notify-btn">
+                    <span>Notify</span>
+                    <?php if ($unreadCount > 0): ?>
+                        <span class="notify-count"><?php echo $unreadCount; ?></span>
+                    <?php endif; ?>
                 </a>
                 <?php endif; ?>
             </div>
