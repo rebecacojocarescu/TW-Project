@@ -2,7 +2,6 @@
 session_start();
 require_once '../config/database.php';
 
-// Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
     header("Location: login.php");
     exit;
@@ -11,35 +10,19 @@ if (!isset($_SESSION['user_id'])) {
 try {
     $conn = getConnection();
     
-    $query = "SELECT 
-        af.id as form_id,
-        af.status,
-        af.form_submitted_date,
-        p.id as pet_id,
-        p.name as pet_name,
-        p.species,
-        NVL(
-            (
-                SELECT url 
-                FROM (
-                    SELECT url
-                    FROM media 
-                    WHERE pet_id = p.id 
-                    AND type = 'photo'
-                    ORDER BY upload_date ASC
-                ) 
-                WHERE ROWNUM = 1
-            ),
-            NULL
-        ) as pet_image
-    FROM adoption_form af
-    JOIN pets p ON af.pet_id = p.id
-    WHERE af.user_id = :user_id
-    ORDER BY af.form_submitted_date DESC";
-
-    $stmt = oci_parse($conn, $query);
+    // Create the ref cursor
+    $cursor = oci_new_cursor($conn);
+    
+    // Prepare the call to the function
+    $stmt = oci_parse($conn, "BEGIN :result := get_user_adoption_status(:user_id); END;");
+    
+    // Bind the parameters
+    oci_bind_by_name($stmt, ":result", $cursor, -1, SQLT_RSET);
     oci_bind_by_name($stmt, ":user_id", $_SESSION['user_id']);
+    
+    // Execute the statement
     oci_execute($stmt);
+    oci_execute($cursor);
 
     $has_requests = false;
 ?>
@@ -118,7 +101,7 @@ try {
     <div class="requests-container">
         <?php 
         $has_requests = false;
-        while ($row = oci_fetch_assoc($stmt)) { 
+        while ($row = oci_fetch_assoc($cursor)) { 
             $has_requests = true;
             
             // Determine status class
@@ -202,8 +185,8 @@ try {
 } catch (Exception $e) {
     echo "Error: " . $e->getMessage();
 } finally {
-    if (isset($stmt)) {
-        oci_free_statement($stmt);
+    if (isset($cursor)) {
+        oci_free_statement($cursor);
     }
     if (isset($conn)) {
         oci_close($conn);

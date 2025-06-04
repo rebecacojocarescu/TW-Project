@@ -2,7 +2,6 @@
 session_start();
 require_once '../config/database.php';
 
-// Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
     header("Location: login.php");
     exit;
@@ -11,39 +10,20 @@ if (!isset($_SESSION['user_id'])) {
 try {
     $conn = getConnection();
     
-    $query = "SELECT 
-        af.id as form_id,
-        af.status,
-        af.first_name,
-        af.last_name,
-        p.id as pet_id,
-        p.name as pet_name,
-        p.species,
-        NVL(
-            (
-                SELECT url 
-                FROM (
-                    SELECT url
-                    FROM media 
-                    WHERE pet_id = p.id 
-                    AND type = 'photo'
-                    ORDER BY upload_date ASC
-                ) 
-                WHERE ROWNUM = 1
-            ),
-            NULL
-        ) as pet_image
-    FROM adoption_form af
-    JOIN pets p ON af.pet_id = p.id
-    WHERE af.status = 'submitted'
-    AND p.owner_id = :user_id
-    ORDER BY af.form_submitted_date DESC";
-
-    $stmt = oci_parse($conn, $query);
+    // Create the ref cursor
+    $cursor = oci_new_cursor($conn);
+    
+    // Prepare the call to the function
+    $stmt = oci_parse($conn, "BEGIN :result := get_adoption_requests(:user_id); END;");
+    
+    // Bind the parameters
+    oci_bind_by_name($stmt, ":result", $cursor, -1, SQLT_RSET);
     oci_bind_by_name($stmt, ":user_id", $_SESSION['user_id']);
+    
+    // Execute the statement
     oci_execute($stmt);
+    oci_execute($cursor);
 
-    // Count how many requests we have
     $has_requests = false;
 ?>
 
@@ -83,21 +63,19 @@ try {
     <div class="requests-container">
         <?php 
         $has_requests = false;
-        while ($row = oci_fetch_assoc($stmt)) { 
+        while ($row = oci_fetch_assoc($cursor)) { 
             $has_requests = true;
         ?>
             <div class="request-card">
                 <div class="pet-info">
                     <?php
                     $image_path = '';
-                    // Debug information
                     error_log("Pet Image from DB: " . print_r($row['PET_IMAGE'], true));
                     error_log("Species: " . $row['SPECIES']);
                     
                     if ($row['PET_IMAGE'] !== null) {
                         $image_path = $row['PET_IMAGE'];
                     } else {
-                        // Folosim imaginea speciei ca fallback
                         $species = strtolower($row['SPECIES']);
                         $image_path = 'stiluri/imagini/' . $species . '.png';
                     }
@@ -151,7 +129,6 @@ try {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    // Reload the page to show updated status
                     location.reload();
                 } else {
                     alert('Error updating status: ' + data.message);
@@ -164,7 +141,6 @@ try {
         }
     }
 
-    // Add sidebar functionality
     document.addEventListener('DOMContentLoaded', function() {
         const hamburger = document.querySelector('.hamburger');
         const sidebar = document.querySelector('.sidebar');
@@ -195,8 +171,8 @@ try {
 } catch (Exception $e) {
     echo "Error: " . $e->getMessage();
 } finally {
-    if (isset($stmt)) {
-        oci_free_statement($stmt);
+    if (isset($cursor)) {
+        oci_free_statement($cursor);
     }
     if (isset($conn)) {
         oci_close($conn);

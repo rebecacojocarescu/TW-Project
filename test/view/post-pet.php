@@ -101,15 +101,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans&display=swap" rel="stylesheet">
 </head>
 <body>
-    <header class="navbar">
-        <div class="header-content">
-            <button class="menu-button">☰</button>
-            <h1>Pow</h1>
-            <a href="profile.php" class="profile-button">
-                <img src="../stiluri/imagini/profileicon.png" alt="Profile">
-            </a>
-        </div>
-    </header>
+    
 
     <main class="post-pet-container">
         <h1>Post Your Pet for Adoption</h1>
