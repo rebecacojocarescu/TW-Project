@@ -17,5 +17,5 @@ function checkAuth() {
         exit();
     }
 
-    return $decoded['user'];
+    return $decoded;
 } 

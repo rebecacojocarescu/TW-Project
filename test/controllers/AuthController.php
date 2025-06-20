@@ -119,25 +119,16 @@
                 $authenticated = $user->authenticate($data['name'], $data['surname'], $data['password']);
 
                 if($authenticated) {
-                    // Start session if not already started
-                    if (session_status() === PHP_SESSION_NONE) {
-                        session_start();
-                    }
-                    
-                    // Set session variables
-                    $_SESSION['user_id'] = $authenticated['ID'];
-                    $_SESSION['user_name'] = $data['name'];
-                    $_SESSION['user_surname'] = $data['surname'];
-                    
                     // Generate JWT token
-                    $userData = [
+                    $userData = (object)[
                         'id' => $authenticated['ID'],
                         'name' => $data['name'],
-                        'surname' => $data['surname']
+                        'surname' => $data['surname'],
+                        'is_admin' => $authenticated['IS_ADMIN'] ?? false
                     ];
                     
                     $token = JWTManager::generateToken($userData);
-                    setcookie('jwt_token', $token, time() + 3600, '/', '', true, true);
+                    setcookie('jwt_token', $token, time() + 3600, '/', '', false, true);
                     
                     echo json_encode([
                         'success' => true,

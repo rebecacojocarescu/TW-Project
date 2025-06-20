@@ -47,13 +47,11 @@ try {
 
 <body>
     <header class="navbar">
-        <div class="hamburger">
-            <span></span>
-            <span></span>
-            <span></span>
-        </div>
+        <a href="lista-animale.php" class="back-btn">
+            Back
+        </a>
 
-        <div class="logo">Pow</div>
+        <a href="homepage.php" class="logo">Pow</a>
 
         <a href="profile.php" class="profile-icon">
             <img src="../stiluri/imagini/profileicon.png" alt="Profile" />
@@ -137,6 +135,9 @@ try {
             }
             ?>
             <button class="adopt-btn" onclick="window.location.href='formular.php?pet_id=<?php echo $pet_id; ?>'">Adopt Me</button>
+            <button class="message-btn" onclick="window.location.href='messages.php?pet_id=<?php echo $pet_id; ?>&owner_id=<?php echo $pet['OWNER_ID']; ?>'">
+                <?php echo $user->id === $pet['OWNER_ID'] ? 'Test Messages' : 'Message Owner'; ?>
+            </button>
         </div>
     </section>
 

@@ -1,15 +1,10 @@
 <?php
+session_start();
 require_once '../utils/auth_middleware.php';
 $user = checkAuth();
 require_once '../controllers/UserController.php';
-session_start();
 
-if (!isset($_SESSION['user_id'])) {
-    header('Location: login.php');
-    exit;
-}
-
-$userId = $_SESSION['user_id'];
+$userId = $user->id;
 $controller = new UserController();
 $message = '';
 
@@ -43,8 +38,8 @@ if (isset($userData['error'])) {
 </head>
 <body>
     <header class="header">
-        <button class="menu-button">☰</button>
-        <a href="homepage.php" style="text-decoration: none; color: inherit;"><h1>Pow</h1></a>
+        <a href="homepage.php" class="back-btn">Back</a>
+        <a href="homepage.php" class="logo"><h1>Pow</h1></a>
         <button class="profile-button">
             <img src="../stiluri/imagini/profileicon.png" alt="Profile">
         </button>
@@ -94,6 +89,11 @@ if (isset($userData['error'])) {
 
             <button type="submit" class="save-button">Save Changes</button>
         </form>
+
+        <div class="profile-actions">
+            <a href="my-pets.php" class="my-pets-btn">My Posted Pets</a>
+            <a href="logout.php" class="logout-btn">Logout</a>
+        </div>
     </div>
 
     <div class="adopted-pets">
@@ -185,6 +185,22 @@ if (isset($userData['error'])) {
         font-family: 'Josefin Sans', sans-serif;
         color: #333;
         margin-bottom: 20px;
+    }
+
+    .my-pets-btn {
+        display: inline-block;
+        padding: 10px 20px;
+        background-color: #2c3e50;
+        color: white;
+        text-decoration: none;
+        border-radius: 20px;
+        margin-top: 20px;
+        font-weight: bold;
+        transition: background-color 0.3s;
+    }
+
+    .my-pets-btn:hover {
+        background-color: #34495e;
     }
     </style>
 </body>

@@ -38,8 +38,222 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <title>Post Pet for Adoption - Pow</title>
     <link rel="stylesheet" href="../stiluri/post-pet.css">
     <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans&display=swap" rel="stylesheet">
+    <script>
+        // Declare variables in global scope
+        let map;
+        let marker;
+        
+        function initMap() {
+            // Inițializăm harta centrată pe România
+            const defaultLocation = { lat: 45.9432, lng: 24.9668 };
+            
+            // Create the map
+            map = new google.maps.Map(document.getElementById("map"), {
+                zoom: 7,
+                center: defaultLocation,
+                streetViewControl: false,
+                mapTypeControl: true,
+                fullscreenControl: true,
+                gestureHandling: 'greedy' // Makes it easier to move the map on mobile
+            });
+
+            // Adăugăm event listener pentru click pe hartă
+            map.addListener("click", (event) => {
+                placeMarker(event.latLng);
+            });
+
+            // Încercăm să obținem locația curentă a utilizatorului
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const pos = {
+                            lat: position.coords.latitude,
+                            lng: position.coords.longitude,
+                        };
+                        map.setCenter(pos);
+                        map.setZoom(12);
+                        placeMarker(pos);
+                    },
+                    () => {
+                        // În caz de eroare, folosim locația default și plasăm un marker
+                        console.log("Error: The Geolocation service failed.");
+                        placeMarker(defaultLocation);
+                    }
+                );
+            } else {
+                // Dacă geolocation nu este suportat, folosim locația default și plasăm un marker
+                placeMarker(defaultLocation);
+            }
+        }
+
+        function placeMarker(location) {
+            // Șterge markerul existent dacă există
+            if (marker) {
+                marker.setMap(null);
+            }
+
+            // Creează noul marker
+            marker = new google.maps.Marker({
+                position: location,
+                map: map,
+                draggable: true,
+                animation: google.maps.Animation.DROP
+            });
+
+            // Actualizează coordonatele în formularul ascuns
+            document.getElementById("latitude").value = location.lat();
+            document.getElementById("longitude").value = location.lng();
+
+            // Adaugă event listener pentru când markerul este mutat
+            marker.addListener("dragend", (event) => {
+                const newPos = marker.getPosition();
+                document.getElementById("latitude").value = newPos.lat();
+                document.getElementById("longitude").value = newPos.lng();
+            });
+
+            // Centrează harta pe marker
+            map.panTo(location);
+        }
+
+        function handleMapError() {
+            const mapDiv = document.getElementById("map");
+            mapDiv.innerHTML = '<div style="padding: 20px; text-align: center; background: #f8d7da; color: #721c24; border-radius: 10px;">Sorry, there was an error loading Google Maps. Please try refreshing the page.</div>';
+        }
+
+        window.initMap = initMap;
+    </script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC9pBmG3InVXEsgC5Hee4KPpU8n87dNNzQ&callback=initMap&v=weekly&region=RO" async defer onerror="handleMapError()"></script>
+    <style>
+        .back-button {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 8px 16px;
+            background-color: #ff5a00;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            text-decoration: none;
+            font-weight: bold;
+            transition: background-color 0.3s;
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+        }
+
+        .back-button:hover {
+            background-color: #ff7a30;
+        }
+
+        .back-icon {
+            font-size: 1.2em;
+        }
+
+        .post-pet-container {
+            margin-top: 80px;
+        }
+
+        /* Stilizare pentru input file */
+        .file-input-container {
+            position: relative;
+            display: inline-block;
+            margin-top: 10px;
+        }
+
+        .file-input-container input[type="file"] {
+            position: absolute;
+            left: -9999px;
+        }
+
+        .custom-file-input {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #2c3e50;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-family: 'Josefin Sans', sans-serif;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+
+        .custom-file-input:hover {
+            background-color: #34495e;
+        }
+
+        .file-input-container small {
+            display: block;
+            margin-top: 5px;
+            color: #666;
+        }
+
+        /* Stilizare pentru butonul de submit */
+        .submit-button {
+            display: block;
+            width: 100%;
+            max-width: 300px;
+            margin: 30px auto;
+            padding: 12px 24px;
+            background-color: #ff5a00;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-family: 'Josefin Sans', sans-serif;
+            font-size: 1.1em;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+
+        .submit-button:hover {
+            background-color: #ff7a30;
+            transform: translateY(-2px);
+        }
+
+        .submit-button:active {
+            transform: translateY(0);
+        }
+
+        /* Stilizare pentru textul cu fișierele selectate */
+        .selected-files {
+            margin-top: 8px;
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        /* Map container styles */
+        #map {
+            height: 400px;
+            width: 100%;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            border: 2px solid #ddd;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        #map:hover {
+            border-color: #f16a16;
+        }
+
+        /* Make sure the map controls are clickable */
+        .gm-style .gm-style-iw {
+            z-index: 1000;
+        }
+    </style>
 </head>
 <body>
+    <a href="homepage.php" class="back-button">
+        <span class="back-icon">←</span>
+        <span>Back</span>
+    </a>
+
     <main class="post-pet-container">
         <h1>Post Your Pet for Adoption</h1>
         
@@ -190,9 +404,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
 
                 <div class="form-group">
+                    <label>Set Location on Map:</label>
+                    <div id="map" style="height: 400px; width: 100%; margin-bottom: 20px; border-radius: 10px;"></div>
+                    <input type="hidden" id="latitude" name="latitude" required>
+                    <input type="hidden" id="longitude" name="longitude" required>
+                </div>
+
+                <div class="form-group">
                     <label for="pet_images">Pet Photos:</label>
-                    <input type="file" id="pet_images" name="pet_images[]" accept="image/*" multiple>
-                    <small>You can select multiple images</small>
+                    <div class="file-input-container">
+                        <input type="file" id="pet_images" name="pet_images[]" accept="image/*" multiple>
+                        <label for="pet_images" class="custom-file-input">Choose Files</label>
+                        <small>You can select multiple images</small>
+                    </div>
                 </div>
             </div>
 

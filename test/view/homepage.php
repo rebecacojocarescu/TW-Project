@@ -3,8 +3,12 @@ session_start();
 require_once '../controllers/NotificationController.php';
 require_once '../utils/auth_middleware.php';
 $notificationController = new NotificationController();
-$unreadCount = $notificationController->getUnreadCount();
 $user = checkAuth();
+$unreadCount = $notificationController->getUnreadCount();
+
+// Set session variables from user object if needed
+$_SESSION['user_id'] = $user->id;
+$_SESSION['is_admin'] = $user->is_admin ?? false;
 ?>
 <!DOCTYPE html>
 <html lang = "en">
@@ -14,36 +18,6 @@ $user = checkAuth();
          <title>Pow - Pet Adoption</title>
          <link rel="stylesheet" href="../stiluri/homepage.css" />
           <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans&display=swap" rel="stylesheet">
-          <style>
-            .notify-btn {
-                display: flex;
-                align-items: center;
-                gap: 5px;
-                background-color: #ff5a00;
-                color: white;
-                padding: 8px 15px;
-                border-radius: 20px;
-                text-decoration: none;
-                position: relative;
-            }
-
-            .notify-btn:hover {
-                background-color: #e65100;
-            }
-
-            .notify-count {
-                position: absolute;
-                top: -5px;
-                right: -5px;
-                background-color: #ffc107;
-                color: black;
-                border-radius: 50%;
-                padding: 2px 6px;
-                font-size: 12px;
-                min-width: 16px;
-                text-align: center;
-            }
-         </style>
     </head>
 
     <body>
@@ -61,19 +35,21 @@ $user = checkAuth();
                     <span>My Adoptions</span>
                 </a>
                 <?php endif; ?>
-                <?php if (isset($_SESSION['user_id'])): ?>
-                <a href="notifications.php" class="notify-btn">
-                    <span>Notify</span>
-                    <?php if ($unreadCount > 0): ?>
-                        <span class="notify-count"><?php echo $unreadCount; ?></span>
-                    <?php endif; ?>
-                </a>
-                <?php endif; ?>
             </div>
 
             <div class="logo">Pow</div>
 
             <div class="nav-right">
+                <a href="messages.php" class="messages-link">Messages</a>
+                <a href="news.php" class="messages-link">News</a>
+                <?php if (isset($_SESSION['user_id'])): ?>
+                <a href="notifications.php" class="messages-link">
+                    Notify
+                    <?php if ($unreadCount > 0): ?>
+                        <span class="notify-count"><?php echo $unreadCount; ?></span>
+                    <?php endif; ?>
+                </a>
+                <?php endif; ?>
                 <a href="profile.php" class="profile-icon">
                     <img src="../stiluri/imagini/profileicon.png" alt="Profile" />
                 </a>
@@ -147,6 +123,12 @@ $user = checkAuth();
                 <img src="../stiluri/imagini/happydog.png" class="dog-image" alt="happy dog" />
             </div>
         </section>
+
+        <nav class="main-nav">
+            <a href="homepage.php">Acasă</a>
+            <a href="lista-animale.php">Animale</a>
+            <a href="profile.php">Profil</a>
+        </nav>
 
     </body>
 </html>

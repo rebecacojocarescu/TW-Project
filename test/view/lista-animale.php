@@ -16,8 +16,8 @@ session_start();
   <body>
     <header>
       <div class="header-content">
-        <button class="menu-button">☰</button>
-        <a href="homepage.php"><h1>Pow</h1></a>
+        <a href="homepage.php" class="back-btn">Back</a>
+        <a href="homepage.php" class="logo"><h1>Pow</h1></a>
         <a href="profile.php" class="profile-button">
           <img src="../stiluri/imagini/profileicon.png" alt="profile-button" />
         </a>

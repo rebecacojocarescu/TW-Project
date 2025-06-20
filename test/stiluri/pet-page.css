@@ -33,15 +33,14 @@ body, html {
     color: #224453;
     font-weight: bold;
     text-align: center;
-    font-size: 1rem;
-    padding-top: 30px;
+    font-size: 2.5rem;
+    text-decoration: none;
 }
 
 .profile-icon img {
-    width: 40px;
-    height: 40px;
+    width: 50px;
+    height: 50px;
     border-radius: 50%;
-    padding-top: 30px;
 }
 
 .pet-banner {
@@ -217,6 +216,24 @@ body, html {
     background-color: #d44e01;
 }
 
+.message-btn {
+    display: block;
+    width: 100%;
+    padding: 15px;
+    margin-top: 10px;
+    background-color: #224453;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1.1em;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.message-btn:hover {
+    background-color: #1a3440;
+}
+
 .location {
     max-width: 1000px;
     margin: 40px auto;
@@ -229,6 +246,23 @@ body, html {
     font-weight: bold;
     margin-bottom: 15px;
     padding-bottom: 5px;
+}
+
+.back-btn {
+    display: flex;
+    align-items: center;
+    background-color: #ff5a00;
+    color: white;
+    padding: 8px 15px;
+    border-radius: 20px;
+    text-decoration: none;
+    font-weight: bold;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.back-btn:hover {
+    background-color: #e65100;
+    transform: scale(1.05);
 }
 
 /* Mobile Responsiveness */

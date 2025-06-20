@@ -398,3 +398,22 @@ DELETE FROM pets WHERE id < 80;
 
 -- Commit the changes
 COMMIT;
+
+-- Create messages table
+CREATE TABLE messages (
+    id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    conversation_id NUMBER NOT NULL,
+    sender_id NUMBER NOT NULL,
+    receiver_id NUMBER NOT NULL,
+    message_text CLOB NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    read_at TIMESTAMP,
+    pet_id NUMBER,
+    CONSTRAINT fk_sender FOREIGN KEY (sender_id) REFERENCES users(id),
+    CONSTRAINT fk_receiver FOREIGN KEY (receiver_id) REFERENCES users(id),
+    CONSTRAINT fk_pet_message FOREIGN KEY (pet_id) REFERENCES pets(id)
+);
+
+-- Create index for faster message retrieval
+CREATE INDEX idx_conversation_id ON messages(conversation_id);
+CREATE INDEX idx_sender_receiver ON messages(sender_id, receiver_id);

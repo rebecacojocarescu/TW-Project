@@ -48,18 +48,51 @@ if (isset($result['error'])) {
             color: rgba(255, 255, 255, 0.8);
             margin-top: 5px;
         }
+
+        .back-button {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 8px 16px;
+            background-color: #ff5a00;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            text-decoration: none;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+
+        .back-button:hover {
+            background-color: #ff7a30;
+        }
+
+        .back-icon {
+            font-size: 1.2em;
+        }
+
+        .logo {
+            font-size: 2.5rem;
+            font-weight: bold;
+            text-decoration: none;
+            color: white;
+        }
+
+        .logo:hover {
+            color: #ff5a00;
+        }
     </style>
 </head>
 <body>
     <div class="overlay"></div>
 
     <header class="navbar">
-        <div class="hamburger">
-            <span></span>
-            <span></span>
-            <span></span>
-        </div>
-        <div class="logo">Pow</div>
+        <a href="homepage.php" class="back-button">
+            <span class="back-icon">←</span>
+            <span>Back</span>
+        </a>
+        <a href="homepage.php" class="logo">Pow</a>
         <div class="nav-right">
             <?php if (isset($_SESSION['is_admin']) && $_SESSION['is_admin']): ?>
             <a href="post-pet.php" class="add-pet-btn">

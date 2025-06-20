@@ -27,12 +27,11 @@ if (isset($result['error'])) {
     <div class="overlay"></div>
 
     <header class="navbar">
-        <div class="hamburger">
-            <span></span>
-            <span></span>
-            <span></span>
-        </div>
-        <div class="logo">Pow</div>
+        <a href="homepage.php" class="back-button">
+            <span class="back-icon">←</span>
+            <span>Back</span>
+        </a>
+        <a href="homepage.php" class="logo">Pow</a>
         <a href="profile.php" class="profile-icon">
             <img src="../stiluri/imagini/profileicon.png" alt="Profile">
         </a>
@@ -129,5 +128,41 @@ if (isset($result['error'])) {
         closeButton.addEventListener('click', closeSidebar);
     });
     </script>
+
+    <style>
+        .back-button {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 8px 16px;
+            background-color: #ff5a00;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            text-decoration: none;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+
+        .back-button:hover {
+            background-color: #ff7a30;
+        }
+
+        .back-icon {
+            font-size: 1.2em;
+        }
+
+        .logo {
+            font-size: 2.5rem;
+            font-weight: bold;
+            text-decoration: none;
+            color: white;
+        }
+
+        .logo:hover {
+            color: #ff5a00;
+        }
+    </style>
 </body>
 </html> 

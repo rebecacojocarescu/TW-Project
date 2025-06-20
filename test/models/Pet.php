@@ -78,10 +78,12 @@ class Pet {
             throw new Exception("Could not parse create pet query");
         }
 
-        // Obținem coordonatele folosind adresa
-        $coordinates = $this->getCoordinatesFromAddress($data['adoption_address']);
-        $data['latitude'] = $coordinates['lat'];
-        $data['longitude'] = $coordinates['lng'];
+        // Folosim coordonatele din formular dacă există, altfel le obținem din adresă
+        if (!isset($data['latitude']) || !isset($data['longitude'])) {
+            $coordinates = $this->getCoordinatesFromAddress($data['adoption_address']);
+            $data['latitude'] = $coordinates['lat'];
+            $data['longitude'] = $coordinates['lng'];
+        }
 
         foreach ($data as $key => $value) {
             if ($key !== 'pet_images') { // Excludem imaginile
@@ -174,5 +176,134 @@ class Pet {
 
     public function uploadPetImages($pet_id, $files) {
         return $this->imageHandler->uploadPetImages($pet_id, $files);
+    }
+
+    public function getPetsByUserId($userId) {
+        $query = "SELECT * FROM pets WHERE owner_id = :user_id ORDER BY id DESC";
+        $stmt = oci_parse($this->conn, $query);
+        
+        if (!$stmt) {
+            throw new Exception("Could not parse query");
+        }
+        
+        oci_bind_by_name($stmt, ":user_id", $userId);
+        $execute = oci_execute($stmt);
+        
+        if (!$execute) {
+            throw new Exception("Could not execute query");
+        }
+        
+        $pets = array();
+        while ($row = oci_fetch_assoc($stmt)) {
+            $pets[] = $row;
+        }
+        
+        oci_free_statement($stmt);
+        
+        return $pets;
+    }
+
+    public function deletePet($petId) {
+        try {
+            // Delete related records from all dependent tables in the correct order
+            // Tables with no dependencies from other tables go first
+            $dependentTables = [
+                'messages',           // Messages referencing the pet
+                'media',             // Media files
+                'feeding_schedule',   // Feeding schedule
+                'restrictions',       // Restrictions
+                'medical_history',    // Medical history
+                'rss_feed',          // RSS feed entries
+                'adoption_form',      // Adoption forms
+                'adoptions'          // Adoption records (must be after adoption_form)
+            ];
+
+            foreach ($dependentTables as $table) {
+                $query = "DELETE FROM {$table} WHERE pet_id = :pet_id";
+                $stmt = oci_parse($this->conn, $query);
+                
+                if (!$stmt) {
+                    throw new Exception("Could not parse delete query for {$table}");
+                }
+                
+                oci_bind_by_name($stmt, ":pet_id", $petId);
+                // Use OCI_NO_AUTO_COMMIT flag to handle transaction manually
+                $execute = oci_execute($stmt, OCI_NO_AUTO_COMMIT);
+                
+                if (!$execute) {
+                    $e = oci_error($stmt);
+                    oci_rollback($this->conn);
+                    throw new Exception("Could not delete from {$table}: " . $e['message']);
+                }
+                
+                oci_free_statement($stmt);
+            }
+
+            // Finally, delete the pet itself
+            $query = "DELETE FROM pets WHERE id = :pet_id";
+            $stmt = oci_parse($this->conn, $query);
+            
+            if (!$stmt) {
+                oci_rollback($this->conn);
+                throw new Exception("Could not parse delete pet query");
+            }
+            
+            oci_bind_by_name($stmt, ":pet_id", $petId);
+            // Use OCI_NO_AUTO_COMMIT flag to handle transaction manually
+            $execute = oci_execute($stmt, OCI_NO_AUTO_COMMIT);
+            
+            if (!$execute) {
+                $e = oci_error($stmt);
+                oci_rollback($this->conn);
+                throw new Exception("Could not delete pet: " . $e['message']);
+            }
+            
+            oci_free_statement($stmt);
+
+            // Commit all changes
+            $commit = oci_commit($this->conn);
+            if (!$commit) {
+                oci_rollback($this->conn);
+                throw new Exception("Could not commit transaction");
+            }
+            
+            return true;
+        } catch (Exception $e) {
+            // Rollback is already handled in the specific error cases
+            throw $e;
+        }
+    }
+
+    private function deleteAllPetMedia($petId) {
+        // Mai întâi obținem toate imaginile
+        $media = $this->getPetMedia($petId);
+        
+        // Ștergem fișierele fizice
+        foreach ($media as $item) {
+            if (isset($item['URL']) && !empty($item['URL'])) {
+                $filePath = dirname(dirname(__FILE__)) . '/' . $item['URL'];
+                if (file_exists($filePath)) {
+                    unlink($filePath);
+                }
+            }
+        }
+
+        // Ștergem înregistrările din baza de date
+        $query = "DELETE FROM media WHERE pet_id = :pet_id";
+        $stmt = oci_parse($this->conn, $query);
+        
+        if (!$stmt) {
+            throw new Exception("Could not parse delete media query");
+        }
+        
+        oci_bind_by_name($stmt, ":pet_id", $petId);
+        $execute = oci_execute($stmt);
+        
+        if (!$execute) {
+            throw new Exception("Could not delete pet media");
+        }
+        
+        oci_free_statement($stmt);
+        return true;
     }
 } 

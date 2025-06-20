@@ -23,7 +23,7 @@ class JWTManager {
     public static function validateToken($token) {
         try {
             $decoded = JWT::decode($token, new Key(self::$key, self::$algorithm));
-            return (array) $decoded;
+            return $decoded->user;
         } catch (Exception $e) {
             return false;
         }
