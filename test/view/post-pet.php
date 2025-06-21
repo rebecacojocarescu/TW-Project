@@ -406,8 +406,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="form-group">
                     <label>Set Location on Map:</label>
                     <div id="map" style="height: 400px; width: 100%; margin-bottom: 20px; border-radius: 10px;"></div>
-                    <input type="hidden" id="latitude" name="latitude" required>
-                    <input type="hidden" id="longitude" name="longitude" required>
+                    <input type="hidden" id="latitude" name="latitude">
+                    <input type="hidden" id="longitude" name="longitude">
                 </div>
 
                 <div class="form-group">

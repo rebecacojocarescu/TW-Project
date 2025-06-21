@@ -18,71 +18,8 @@ if (isset($result['error'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Adoption Status - Pow</title>
     <link rel="stylesheet" href="../stiluri/adoption-requests.css">
+    <link rel="stylesheet" href="../stiluri/adoption-status.css">
     <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans&display=swap" rel="stylesheet">
-    <style>
-        .status-badge {
-            padding: 5px 10px;
-            border-radius: 15px;
-            font-weight: bold;
-            text-transform: uppercase;
-            font-size: 12px;
-        }
-        
-        .status-submitted {
-            background-color: #ffc107;
-            color: black;
-        }
-        
-        .status-approved {
-            background-color: #4CAF50;
-            color: white;
-        }
-        
-        .status-rejected {
-            background-color: #f44336;
-            color: white;
-        }
-
-        .request-date {
-            font-size: 12px;
-            color: rgba(255, 255, 255, 0.8);
-            margin-top: 5px;
-        }
-
-        .back-button {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            padding: 8px 16px;
-            background-color: #ff5a00;
-            color: white;
-            border: none;
-            border-radius: 20px;
-            cursor: pointer;
-            text-decoration: none;
-            font-weight: bold;
-            transition: background-color 0.3s;
-        }
-
-        .back-button:hover {
-            background-color: #ff7a30;
-        }
-
-        .back-icon {
-            font-size: 1.2em;
-        }
-
-        .logo {
-            font-size: 2.5rem;
-            font-weight: bold;
-            text-decoration: none;
-            color: white;
-        }
-
-        .logo:hover {
-            color: #ff5a00;
-        }
-    </style>
 </head>
 <body>
     <div class="overlay"></div>

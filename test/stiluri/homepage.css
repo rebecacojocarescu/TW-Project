@@ -177,18 +177,7 @@ body, html {
     border-radius: 50%;
 }
 
-.hamburger {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    cursor: pointer;
-}
 
-.hamburger span {
-    width: 25px;
-    height: 3px;
-    background: black;
-}
 
 .welcome {
   text-align: start;
@@ -290,7 +279,6 @@ body, html {
   padding-top: 50px;
 }
 
-/* Get a Pet! section: dog image overlaps bottom of yellow column */
 .split-section {
   display: flex;
   flex-direction: row;
@@ -302,31 +290,38 @@ body, html {
 .left-side {
   background-color: #FBBD08;
   flex: 1;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
   position: relative;
+  min-height: 200px;
+  padding-bottom: 0;
 }
 .right-side {
   background-color: #ED5C01;
   flex: 1;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
+  text-align: center;
 }
 .right-side h3 {
   font-size: 2.5rem;
   color: #224453;
   margin: 0;
   word-break: break-word;
+  margin-bottom: 20px;
 }
 .dog-image {
-  position: absolute;
-  left: 10%;
-  bottom: -40px;
-  width: 180px;
-  z-index: 2;
-  pointer-events: none;
+  width: 60%;
+  max-width: 220px;
+  height: auto;
+  max-height: 100%;
+  object-fit: contain;
+  display: block;
+  margin-bottom: 0;
 }
 
-/* Add these new styles for the plus button */
 .nav-right {
     display: flex;
     align-items: center;
@@ -407,7 +402,6 @@ body, html {
     font-weight: bold;
 }
 
-/* Advanced responsive design for homepage */
 @media (max-width: 1200px) {
   .welcome, .why-adopt, .comics, .oui {
     padding-left: 10vw;
@@ -432,7 +426,8 @@ body, html {
 }
 @media (max-width: 900px) {
   .split-section { height: 140px; }
-  .dog-image { width: 100px; bottom: -25px; }
+  .left-side { min-height: 140px; }
+  .dog-image { max-width: 120px; width: 80%; }
   .right-side h3 { font-size: 1.3rem; }
   .navbar {
     flex-wrap: wrap;
@@ -515,9 +510,9 @@ body, html {
 }
 @media (max-width: 600px) {
   .split-section { height: 90px; }
-  .dog-image { width: 60px; bottom: -15px; }
+  .left-side { min-height: 90px; }
+  .dog-image { max-width: 60px; width: 50vw; }
   .right-side h3 { font-size: 1rem; }
-  .left-side, .right-side { padding: 0 2vw; }
   .add-pet-btn, .requests-btn, .notify-btn, .messages-link, .back-btn {
     width: 100%;
     font-size: 1em;

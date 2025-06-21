@@ -26,7 +26,7 @@ session_start();
     <div class="wrapper">
       <div class="main-container">
         <h2>Filters:</h2>
-        <form method="GET" action="">
+        <form method="GET">
           <div class="filters">
             <div class="filter-group">
               <label for="type">Type:</label>

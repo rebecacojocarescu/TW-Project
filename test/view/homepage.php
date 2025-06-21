@@ -108,19 +108,20 @@ $_SESSION['is_admin'] = $user->is_admin ?? false;
              </div>
         </section>
 
-         <section class="comics">
+         <div class="comics">
             <div class="meme1"><img src="../stiluri/imagini/meme1.png" alt=""></div>
             <div class="meme"><img src="../stiluri/imagini/meme2.png" alt=""></div>
             <div class="meme"><img src="../stiluri/imagini/meme3.png" alt=""></div>
-        </section>
+         </div>
 
         <section class="oui">
             <div class="split-section">
-                <div class="left-side"></div>
+                <div class="left-side">
+                    <img src="../stiluri/imagini/happydog.png" class="dog-image" alt="happy dog" />
+                </div>
                 <div class="right-side">
                     <h3>Get a Pet!</h3>
                 </div>
-                <img src="../stiluri/imagini/happydog.png" class="dog-image" alt="happy dog" />
             </div>
         </section>
 

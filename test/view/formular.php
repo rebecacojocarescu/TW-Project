@@ -201,6 +201,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         </div>
 
         <section class="terms-section">
+            <h2>Terms and Conditions</h2>
             <ul class="terms-list">
                 <li>By clicking the submit button, I agree to go adoption process will undergo thoroughly and check all above-mentioned information.</li>
                 <li>By clicking the submit button, I understand my references will be checked including veterinary and personal.</li>

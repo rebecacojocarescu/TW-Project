@@ -58,7 +58,7 @@ if (isset($userData['error'])) {
             </div>
         <?php endif; ?>
 
-        <form method="POST" action="">
+        <form method="POST" action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>">
             <div class="form-group">
                 <input type="text" name="name" placeholder="name" 
                        value="<?php echo htmlspecialchars($user['NAME'] ?? ''); ?>" required>
@@ -118,90 +118,5 @@ if (isset($userData['error'])) {
             <p>No pets adopted yet.</p>
         <?php endif; ?>
     </div>
-
-    <style>
-    .pet-circles {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 20px;
-        justify-content: center;
-        padding: 20px;
-    }
-
-    .pet-circle {
-        width: 90px;
-        text-align: center;
-        margin: 10px;
-    }
-
-    .circle-container {
-        width: 90px;
-        height: 90px;
-        border-radius: 100%;
-        overflow: hidden;
-        margin: 0 auto;
-        border: 4px solid #FFD700;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        transition: transform 0.3s ease;
-    }
-
-    .circle-container:hover {
-        transform: scale(1.05);
-    }
-
-    .circle-container img {
-        width: 90px;
-        height: 90px;
-        object-fit: cover;
-    }
-
-    .pet-name {
-        margin-top: 10px;
-        font-family: 'Josefin Sans', sans-serif;
-        font-size: 16px;
-        color: #333;
-    }
-
-    .pet-circle a {
-        text-decoration: none;
-        color: inherit;
-        display: block;
-    }
-
-    .adoption-date {
-        font-family: 'Josefin Sans', sans-serif;
-        font-size: 14px;
-        color: #666;
-        margin-top: 5px;
-    }
-
-    .adopted-pets {
-        text-align: center;
-        padding: 20px;
-        margin-top: 30px;
-    }
-
-    .adopted-pets h2 {
-        font-family: 'Josefin Sans', sans-serif;
-        color: #333;
-        margin-bottom: 20px;
-    }
-
-    .my-pets-btn {
-        display: inline-block;
-        padding: 10px 20px;
-        background-color: #2c3e50;
-        color: white;
-        text-decoration: none;
-        border-radius: 20px;
-        margin-top: 20px;
-        font-weight: bold;
-        transition: background-color 0.3s;
-    }
-
-    .my-pets-btn:hover {
-        background-color: #34495e;
-    }
-    </style>
 </body>
 </html> 

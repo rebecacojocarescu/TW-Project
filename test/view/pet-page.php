@@ -62,7 +62,7 @@ try {
         <h1><?php echo htmlspecialchars($pet['NAME']); ?></h1>
     </section>
 
-    <section class="pet-photos">
+    <div class="pet-photos">
         <div class="photo-container">
             <?php if (!empty($media)): ?>
                 <?php foreach ($media as $image): ?>
@@ -72,7 +72,7 @@ try {
                 <img src="../stiluri/imagini/<?php echo strtolower($pet['SPECIES']); ?>.png" alt="<?php echo htmlspecialchars($pet['NAME']); ?>" class="pet-photo">
             <?php endif; ?>
         </div>
-    </section>
+    </div>
 
     <section class="pet-info">
         <div class="description">
