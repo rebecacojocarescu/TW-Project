@@ -31,9 +31,7 @@ class AdoptionFormController {
             ]);
 
             $this->model->submitForm($formData);
-            
-            header("Location: adoption-success.php");
-            exit;
+            return ['success' => true];
         } catch (Exception $e) {
             return ['error' => $e->getMessage()];
         }
@@ -94,6 +92,21 @@ class AdoptionFormController {
             $result = $this->model->updateStatus($formId, $status);
             
             if ($result) {
+                // Send email if approved
+                if ($status === 'approved') {
+                    $adopter = $this->model->getAdopterDetails($formId);
+                    if ($adopter && !empty($adopter['EMAIL'])) {
+                        $to = $adopter['EMAIL'];
+                        $subject = 'Congratulations! Your Adoption Request Has Been Approved';
+                        $petName = $adopter['PET_NAME_DESIRED'];
+                        $firstName = $adopter['FIRST_NAME'];
+                        $message = "Hello $firstName,\n\nCongratulations! Your request to adopt '$petName' has been approved. The pet will soon be part of your family!\n\nThank you for choosing adoption.\n\nBest regards,\nPow Team";
+                        $headers = 'From: no-reply@pow-adopt.com' . "\r\n" .
+                            'Reply-To: no-reply@pow-adopt.com' . "\r\n" .
+                            'X-Mailer: PHP/' . phpversion();
+                        @mail($to, $subject, $message, $headers);
+                    }
+                }
                 return [
                     'success' => true,
                     'message' => 'Status updated successfully'

@@ -30,10 +30,10 @@ class AdoptionForm {
 
             $stmt = oci_parse($this->conn, $query);
             
-            $has_yard = $data['yard'] === 'yes' ? 1 : 0;
-            $has_pet_permission = $data['landlord_permission'] === 'yes' ? 1 : 0;
-            $has_children = $data['children'] === 'yes' ? 1 : 0;
-            $has_other_pets = $data['current_pets'] === 'yes' ? 1 : 0;
+            $has_yard = (isset($data['yard']) && $data['yard'] === 'yes') ? 1 : 0;
+            $has_pet_permission = (isset($data['landlord_permission']) && $data['landlord_permission'] === 'yes') ? 1 : 0;
+            $has_children = (isset($data['children']) && $data['children'] === 'yes') ? 1 : 0;
+            $has_other_pets = (isset($data['current_pets']) && $data['current_pets'] === 'yes') ? 1 : 0;
             
             $hours_alone = 0;
             if (preg_match('/(\d+)/', $data['pet_alone_time'], $matches)) {
@@ -119,6 +119,27 @@ class AdoptionForm {
             oci_rollback($this->conn);
             error_log("Error updating adoption status: " . $e->getMessage());
             return false;
+        } finally {
+            if (isset($stmt)) {
+                oci_free_statement($stmt);
+            }
+        }
+    }
+
+    public function getAdopterDetails($formId) {
+        try {
+            $query = "SELECT email, first_name, last_name, pet_name_desired FROM adoption_form WHERE id = :form_id";
+            $stmt = oci_parse($this->conn, $query);
+            oci_bind_by_name($stmt, ":form_id", $formId);
+            oci_execute($stmt);
+            $row = oci_fetch_assoc($stmt);
+            if ($row) {
+                return $row;
+            } else {
+                return null;
+            }
+        } catch (Exception $e) {
+            return null;
         } finally {
             if (isset($stmt)) {
                 oci_free_statement($stmt);

@@ -9,6 +9,7 @@ $controller = new AdoptionFormController();
 $controller->index();
 
 $errors = [];
+$success = false;
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $errors = $controller->validateForm($_POST);
     
@@ -18,6 +19,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         
         if (isset($result['error'])) {
             $errors[] = $result['error'];
+        } elseif (isset($result['success']) && $result['success']) {
+            $success = true;
         }
     }
 }
@@ -212,6 +215,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         </section>
 
         <button type="submit" class="submit-btn">Submit</button>
+        <?php if ($success): ?>
+            <div class="success-message" style="margin-top: 20px; color: green; font-weight: bold; text-align: center;">Submitted with success!</div>
+        <?php endif; ?>
     </form>
 </body>
 </html> 

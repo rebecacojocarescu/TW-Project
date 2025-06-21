@@ -182,49 +182,49 @@ try {
         <div class="form-group two-col">
             <div>
                 <label>First Name</label>
-                <div class="form-value"><?php echo htmlspecialchars($form['FIRST_NAME']); ?></div>
+                <div class="form-value"><?php echo htmlspecialchars($form['FIRST_NAME'] ?? ''); ?></div>
             </div>
             <div>
                 <label>Last Name</label>
-                <div class="form-value"><?php echo htmlspecialchars($form['LAST_NAME']); ?></div>
+                <div class="form-value"><?php echo htmlspecialchars($form['LAST_NAME'] ?? ''); ?></div>
             </div>
         </div>
         
         <div class="form-group two-col">
             <div>
                 <label>Email</label>
-                <div class="form-value"><?php echo htmlspecialchars($form['EMAIL']); ?></div>
+                <div class="form-value"><?php echo htmlspecialchars($form['EMAIL'] ?? ''); ?></div>
             </div>
             <div>
                 <label>Phone Number</label>
-                <div class="form-value"><?php echo htmlspecialchars($form['PHONE']); ?></div>
+                <div class="form-value"><?php echo htmlspecialchars($form['PHONE'] ?? ''); ?></div>
             </div>
         </div>
         
         <div class="address-group">
             <div>
                 <label>Address</label>
-                <div class="form-value"><?php echo htmlspecialchars($form['STREET_ADDRESS']); ?></div>
+                <div class="form-value"><?php echo htmlspecialchars($form['STREET_ADDRESS'] ?? ''); ?></div>
             </div>
             <div class="city-country-row">
                 <div>
                     <label>City</label>
-                    <div class="form-value"><?php echo htmlspecialchars($form['CITY']); ?></div>
+                    <div class="form-value"><?php echo htmlspecialchars($form['CITY'] ?? ''); ?></div>
                 </div>
                 <div>
                     <label>Country</label>
-                    <div class="form-value"><?php echo htmlspecialchars($form['COUNTRY']); ?></div>
+                    <div class="form-value"><?php echo htmlspecialchars($form['COUNTRY'] ?? ''); ?></div>
                 </div>
             </div>
             <div>
                 <label>Postal/Zip Code</label>
-                <div class="form-value"><?php echo htmlspecialchars($form['POSTAL_CODE']); ?></div>
+                <div class="form-value"><?php echo htmlspecialchars($form['POSTAL_CODE'] ?? ''); ?></div>
             </div>
         </div>
 
         <div class="form-group">
             <label>Name of Pet They Wish to Adopt</label>
-            <div class="form-value"><?php echo htmlspecialchars($form['PET_NAME_DESIRED']); ?></div>
+            <div class="form-value"><?php echo htmlspecialchars($form['PET_NAME_DESIRED'] ?? ''); ?></div>
         </div>
 
         <div class="form-group">
@@ -234,17 +234,17 @@ try {
 
         <div class="form-group">
             <label>Living Situation</label>
-            <div class="form-value"><?php echo htmlspecialchars($form['HOUSING_STATUS']); ?></div>
+            <div class="form-value"><?php echo htmlspecialchars($form['HOUSING_STATUS'] ?? ''); ?></div>
         </div>
 
         <div class="form-group">
             <label>Experience with Pets</label>
-            <div class="form-value"><?php echo htmlspecialchars($form['OTHER_PETS_DESCRIPTION']); ?></div>
+            <div class="form-value"><?php echo htmlspecialchars($form['OTHER_PETS_DESCRIPTION'] ?? ''); ?></div>
         </div>
 
         <div class="form-group">
             <label>Additional Comments</label>
-            <div class="form-value"><?php echo htmlspecialchars($form['ADOPTION_REASON']); ?></div>
+            <div class="form-value"><?php echo htmlspecialchars($form['ADOPTION_REASON'] ?? ''); ?></div>
         </div>
 
         <div class="form-actions">

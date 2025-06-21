@@ -124,11 +124,5 @@ $_SESSION['is_admin'] = $user->is_admin ?? false;
             </div>
         </section>
 
-        <nav class="main-nav">
-            <a href="homepage.php">Acasă</a>
-            <a href="lista-animale.php">Animale</a>
-            <a href="profile.php">Profil</a>
-        </nav>
-
     </body>
 </html>

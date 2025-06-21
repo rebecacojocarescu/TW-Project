@@ -173,3 +173,111 @@ body, html {
   width: 278px;
 }
 
+/* === RESPONSIVE DESIGN === */
+@media (max-width: 900px) {
+  .welcome {
+    padding: 30px 30px;
+    font-size: 1.2rem;
+  }
+  .pet-options {
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+  }
+  .pet-card img {
+    width: 160px;
+    height: 180px;
+  }
+  .why-content {
+    flex-direction: column;
+    gap: 30px;
+    align-items: flex-start;
+  }
+  .why-content ul {
+    padding-left: 0;
+    font-size: 1.2rem;
+    max-width: 100%;
+  }
+  .why-content img {
+    max-width: 100%;
+    height: auto;
+    margin: 0 auto;
+    display: block;
+  }
+  .meme1 img, .meme img {
+    width: 220px;
+    height: auto;
+  }
+  .split-section {
+    flex-direction: column;
+    height: auto;
+    min-height: 200px;
+  }
+  .dog-image {
+    position: static;
+    width: 180px;
+    margin: 0 auto;
+    display: block;
+    top: unset;
+    left: unset;
+  }
+  .right-side h3 {
+    font-size: 2rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .navbar {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 10px 10px;
+  }
+  .logo {
+    font-size: 1.2rem;
+    padding-top: 10px;
+  }
+  .profile-icon img {
+    width: 32px;
+    height: 32px;
+    padding-top: 10px;
+  }
+  .welcome {
+    padding: 20px 5px;
+    font-size: 1rem;
+  }
+  .pet-options {
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+  }
+  .pet-card img {
+    width: 120px;
+    height: 120px;
+  }
+  .why-adopt h2 {
+    font-size: 2rem;
+  }
+  .comics {
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+  }
+  .meme1 img, .meme img {
+    width: 100%;
+    max-width: 250px;
+    height: auto;
+  }
+  .split-section {
+    flex-direction: column;
+    height: auto;
+    min-height: 120px;
+  }
+  .right-side h3 {
+    font-size: 1.2rem;
+  }
+  .dog-image {
+    width: 120px;
+  }
+}
+
