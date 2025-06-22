@@ -6,12 +6,12 @@ class NotificationController {
 
     public function __construct() {
         $this->conn = getConnection();
-    }
-
-    public function getNotifications() {
+    }    public function getNotifications() {
         if (!isset($_SESSION['user_id'])) {
-            header('Location: login.php');
-            exit;
+            return [
+                'success' => false,
+                'error' => 'User not authenticated'
+            ];
         }
 
         try {
@@ -109,4 +109,5 @@ class NotificationController {
             return ['success' => false, 'error' => $e->getMessage()];
         }
     }
+
 } 

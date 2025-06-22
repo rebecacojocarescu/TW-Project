@@ -3,25 +3,9 @@ require_once '../utils/auth_middleware.php';
 $user = checkAuth();
 
 session_start();
-require_once '../controllers/NotificationController.php';
 
 if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
-    exit;
-}
-
-$controller = new NotificationController();
-$result = $controller->getNotifications();
-
-if (isset($_POST['mark_read'])) {
-    $controller->markAsRead($_POST['notification_id']);
-    header('Location: notifications.php');
-    exit;
-}
-
-if (isset($_POST['mark_all_read'])) {
-    $controller->markAllAsRead();
-    header('Location: notifications.php');
     exit;
 }
 ?>
@@ -49,59 +33,267 @@ if (isset($_POST['mark_all_read'])) {
                 <img src="../stiluri/imagini/profileicon.png" alt="Profile">
             </a>
         </div>
-    </header>
-
-    <div class="notifications-container">
+    </header>    <div class="notifications-container">
         <h1>Notifications</h1>
         
-        <?php if ($result['success'] && !empty($result['notifications'])): ?>
-            <form method="POST" style="text-align: right;">
-                <button type="submit" name="mark_all_read" class="mark-all-read">
-                    Mark all as read
-                </button>
-            </form>
-
-            <?php foreach ($result['notifications'] as $notification): ?>
-                <div class="notification-card <?php echo $notification['IS_READ'] ? '' : 'unread'; ?>">
-                    <div class="notification-content">
-                        <p class="notification-message">
-                            <?php echo htmlspecialchars($notification['MESSAGE']); ?>
-                        </p>
-                        <p class="notification-date">
-                            <?php echo date('F j, Y, g:i a', strtotime($notification['CREATED_AT'])); ?>
-                        </p>
-                    </div>
-
-                    <?php if (!$notification['IS_READ']): ?>
-                        <div class="notification-actions">
-                            <form method="POST">
-                                <input type="hidden" name="notification_id" 
-                                       value="<?php echo $notification['ID']; ?>">
-                                <button type="submit" name="mark_read" class="mark-read-btn">
-                                    Mark as read
-                                </button>
-                            </form>
-                        </div>
-                    <?php endif; ?>
-                </div>
-            <?php endforeach; ?>
-        <?php else: ?>
-            <div class="no-notifications">
-                <h2>No notifications yet</h2>
-                <p>When you receive notifications, they will appear here.</p>
-            </div>
-        <?php endif; ?>
-    </div>
-
+        <div class="loading-spinner" id="loading-spinner"></div>
+        
+        <div id="notifications-header" style="display: none; text-align: right;">
+            <button id="mark-all-read-btn" class="mark-all-read">
+                Mark all as read
+            </button>
+        </div>
+        
+        <div id="notifications-list">
+            <!-- Notifications will be loaded here via JavaScript -->
+        </div>
+    </div>    <style>
+        .notification-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        
+        .message-owner-btn {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 8px 12px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .message-owner-btn:hover {
+            background-color: #45a049;
+        }
+    </style>
+    
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Hamburger menu functionality
-            const hamburger = document.querySelector('.hamburger');
-            hamburger.addEventListener('click', function() {
-                this.classList.toggle('active');
-                // Add your sidebar toggle logic here
-            });
+            // Load notifications when the page loads
+            fetchNotifications();
+            
+            // Set up event handler for "Mark all as read" button
+            document.getElementById('mark-all-read-btn').addEventListener('click', markAllAsRead);
         });
+        
+        // Show/hide loading spinner
+        function showLoadingSpinner(show = true) {
+            const spinner = document.getElementById('loading-spinner');
+            spinner.style.display = show ? 'flex' : 'none';
+        }
+        
+        // Show message to the user
+        function showMessage(message, isError = false) {
+            // Create message element if it doesn't exist
+            let messageElement = document.getElementById('notification-message');
+            if (!messageElement) {
+                messageElement = document.createElement('div');
+                messageElement.id = 'notification-message';
+                messageElement.className = 'notification-message';
+                document.querySelector('.notifications-container').prepend(messageElement);
+            }
+            
+            // Set message content and style
+            messageElement.textContent = message;
+            messageElement.className = 'notification-message ' + (isError ? 'error' : 'success');
+            messageElement.style.display = 'block';
+            
+            // Auto-hide after 5 seconds
+            setTimeout(() => {
+                messageElement.style.display = 'none';
+            }, 5000);
+        }
+        
+        // Fetch notifications from the API
+        async function fetchNotifications() {
+            showLoadingSpinner(true);
+            document.getElementById('notifications-list').innerHTML = '';
+            document.getElementById('notifications-header').style.display = 'none';
+            
+            try {                const response = await fetch('../public/api.php?type=notifications&action=get_notifications');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                  console.log('API response:', data); // Adăugăm logging pentru debugging
+                
+                if (data.success && data.notifications) {
+                    displayNotifications(data.notifications);
+                    document.getElementById('notifications-header').style.display = 'block';
+                } else {
+                    showMessage(data.message || 'Failed to load notifications', true);
+                }
+            } catch (error) {
+                console.error('Error fetching notifications:', error);
+                showMessage('An error occurred while loading notifications', true);
+            } finally {
+                showLoadingSpinner(false);
+            }
+        }
+        
+        // Display notifications in the UI
+        function displayNotifications(notifications) {
+            const container = document.getElementById('notifications-list');
+            
+            if (notifications.length === 0) {
+                container.innerHTML = '<p class="no-notifications">You have no notifications</p>';
+                document.getElementById('mark-all-read-btn').style.display = 'none';
+                return;
+            }
+            
+            document.getElementById('mark-all-read-btn').style.display = 'block';                const notificationsHTML = notifications.map(notification => {
+                const isRead = notification.IS_READ == 1;
+                const notificationClass = isRead ? 'notification read' : 'notification unread';
+                const petLink = notification.PET_NAME ? 
+                    `<a href="pet-page.php?id=${notification.RELATED_PET_ID}">${notification.PET_NAME}</a>` : '';
+                
+                let content = notification.MESSAGE;
+                if (notification.PET_NAME) {
+                    content = content.replace(notification.PET_NAME, petLink);
+                }
+                
+                // Check if this is an adoption approval notification
+                const isAdoptionApproved = notification.MESSAGE && notification.MESSAGE.toLowerCase().includes('approved') && 
+                                          notification.MESSAGE.toLowerCase().includes('adoption') && 
+                                          notification.PET_NAME && notification.RELATED_PET_ID;
+                
+                // Get owner information if available - this would typically be in the notification data
+                const ownerId = notification.OWNER_ID || null;
+                
+                return `
+                    <div class="${notificationClass}" data-id="${notification.ID}">
+                        <div class="notification-content">${content}</div>
+                        <div class="notification-time">
+                            ${new Date(notification.CREATED_AT).toLocaleDateString('en-GB', {
+                                day: 'numeric',
+                                month: 'short',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                            })}
+                        </div>
+                        <div class="notification-actions">
+                            ${!isRead ? 
+                                `<button class="mark-read-btn" onclick="markAsRead(${notification.ID})">
+                                    Mark as read
+                                </button>` : 
+                                ''}
+                            ${isAdoptionApproved ? 
+                                `<button class="message-owner-btn" onclick="messageOwner(${notification.RELATED_PET_ID})">
+                                    Message owner to arrange pickup
+                                </button>` : 
+                                ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            container.innerHTML = notificationsHTML;
+        }
+        
+        // Mark a single notification as read
+        async function markAsRead(notificationId) {
+            try {                const response = await fetch('../public/api.php?type=notifications&action=mark_read', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ notification_id: notificationId })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Update UI to mark notification as read
+                    const notification = document.querySelector(`.notification[data-id="${notificationId}"]`);
+                    if (notification) {
+                        notification.classList.remove('unread');
+                        notification.classList.add('read');
+                        const button = notification.querySelector('.mark-read-btn');
+                        if (button) {
+                            button.remove();
+                        }
+                    }
+                    showMessage('Notification marked as read');
+                } else {
+                    showMessage(data.message || 'Failed to mark notification as read', true);
+                }
+            } catch (error) {
+                console.error('Error marking notification as read:', error);
+                showMessage('An error occurred', true);
+            }
+        }
+          // Mark all notifications as read
+        async function markAllAsRead() {
+            showLoadingSpinner(true);
+            
+            try {                const response = await fetch('../public/api.php?type=notifications&action=mark_all_read', {
+                    method: 'POST'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Refresh notifications to update UI
+                    fetchNotifications();
+                    showMessage('All notifications marked as read');
+                } else {
+                    showMessage(data.message || 'Failed to mark all notifications as read', true);
+                    showLoadingSpinner(false);
+                }
+            } catch (error) {
+                console.error('Error marking all notifications as read:', error);
+                showMessage('An error occurred', true);
+                showLoadingSpinner(false);
+            }
+        }
+          // Function to handle redirecting to the messages page to contact the pet owner
+        async function messageOwner(petId) {
+            try {
+                showLoadingSpinner(true);
+                
+                // Get pet details including owner information
+                const response = await fetch(`../public/api.php?type=pets&action=get_details&id=${petId}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.success && data.pet) {
+                    const ownerId = data.pet.OWNER_ID || data.pet.owner_id;
+                    
+                    if (ownerId) {
+                        // Redirect to messages page with the right parameters
+                        window.location.href = `messages.php?pet_id=${petId}&owner_id=${ownerId}`;
+                    } else {
+                        showMessage('Could not retrieve owner information', true);
+                        showLoadingSpinner(false);
+                    }
+                } else {
+                    showMessage('Could not retrieve pet information', true);
+                    showLoadingSpinner(false);
+                }
+            } catch (error) {
+                console.error('Error getting pet owner details:', error);
+                showMessage('An error occurred while trying to message the owner', true);
+                showLoadingSpinner(false);
+            }
+        }
     </script>
 </body>
-</html> 
+</html>

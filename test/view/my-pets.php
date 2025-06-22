@@ -2,16 +2,12 @@
 require_once '../utils/auth_middleware.php';
 $user = checkAuth();
 
-require_once '../controllers/PetController.php';
 session_start();
 
 if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
     exit;
 }
-
-$controller = new PetController();
-$pets = $controller->getUserPets($_SESSION['user_id']);
 ?>
 
 <!DOCTYPE html>
@@ -132,6 +128,36 @@ $pets = $controller->getUserPets($_SESSION['user_id']);
             font-size: 1.2em;
             margin-top: 50px;
         }
+
+        /* Loading Spinner */
+        .loading-spinner {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 50px auto;
+            width: 100%;
+        }
+        .loading-spinner::after {
+            content: "";
+            width: 50px;
+            height: 50px;
+            border: 6px solid #e0e0e0;
+            border-top: 6px solid #ff5a00;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .error-message {
+            background-color: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -141,50 +167,120 @@ $pets = $controller->getUserPets($_SESSION['user_id']);
     </a>
 
     <div class="container">
-        <h1>My Posted Pets</h1>
-
-        <div class="pets-grid">
-            <?php if (!empty($pets)): ?>
-                <?php foreach ($pets as $pet): ?>
-                    <div class="pet-card">
-                        <?php 
-                        $imageUrl = $controller->getDefaultPetImage($pet['ID'], $pet['SPECIES']);
-                        if (!empty($imageUrl)): 
-                        ?>
-                        <img src="<?php echo $imageUrl; ?>" 
-                             alt="<?php echo htmlspecialchars($pet['NAME'] ?? 'Pet'); ?>" 
-                             class="pet-image">
-                        <?php else: ?>
-                        <div class="pet-image" style="background-color: #f0f0f0; display: flex; align-items: center; justify-content: center;">
-                            <span style="color: #999;"><?php echo htmlspecialchars($pet['NAME'] ?? 'Pet'); ?></span>
-                        </div>
-                        <?php endif; ?>
-                        <div class="pet-info">
-                            <h3 class="pet-name"><?php echo htmlspecialchars($pet['NAME'] ?? 'Unnamed Pet'); ?></h3>
-                            <button class="delete-btn" onclick="deletePet(<?php echo (int)$pet['ID']; ?>)">Delete</button>
-                        </div>
-                    </div>
-                <?php endforeach; ?>
-            <?php else: ?>
-                <div class="no-pets">
-                    <p>You haven't posted any pets yet.</p>
-                </div>
-            <?php endif; ?>
+        <h1>My Posted Pets</h1>        <div class="pets-grid" id="pets-container">
+            <div id="loading" class="loading-spinner"></div>
+            <div class="no-pets" id="no-pets" style="display: none;">
+                <p>You haven't posted any pets yet.</p>
+            </div>
         </div>
     </div>
 
     <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            fetchUserPets();
+        });
+        
+        // Fetch user pets from API
+        async function fetchUserPets() {
+            const container = document.getElementById('pets-container');
+            const loading = document.getElementById('loading');
+            const noPets = document.getElementById('no-pets');
+            
+            try {
+                const response = await fetch(`../public/api.php?type=pets&action=get_user_pets`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Hide loading spinner
+                    loading.style.display = 'none';
+                    
+                    // Check if there are pets to display
+                    if (data.pets && data.pets.length > 0) {
+                        // Create HTML for each pet
+                        data.pets.forEach(pet => {
+                            const petCard = document.createElement('div');
+                            petCard.className = 'pet-card';
+                            
+                            // Create image element
+                            if (pet.IMAGE) {
+                                const img = document.createElement('img');
+                                img.src = pet.IMAGE;
+                                img.alt = pet.NAME || 'Pet';
+                                img.className = 'pet-image';
+                                petCard.appendChild(img);
+                            } else {
+                                const imgPlaceholder = document.createElement('div');
+                                imgPlaceholder.className = 'pet-image';
+                                imgPlaceholder.style.backgroundColor = '#f0f0f0';
+                                imgPlaceholder.style.display = 'flex';
+                                imgPlaceholder.style.alignItems = 'center';
+                                imgPlaceholder.style.justifyContent = 'center';
+                                
+                                const nameSpan = document.createElement('span');
+                                nameSpan.style.color = '#999';
+                                nameSpan.textContent = pet.NAME || 'Pet';
+                                
+                                imgPlaceholder.appendChild(nameSpan);
+                                petCard.appendChild(imgPlaceholder);
+                            }
+                            
+                            // Create pet info section
+                            const infoDiv = document.createElement('div');
+                            infoDiv.className = 'pet-info';
+                            
+                            const petName = document.createElement('h3');
+                            petName.className = 'pet-name';
+                            petName.textContent = pet.NAME || 'Unnamed Pet';
+                            
+                            const deleteBtn = document.createElement('button');
+                            deleteBtn.className = 'delete-btn';
+                            deleteBtn.textContent = 'Delete';
+                            deleteBtn.onclick = function() { deletePet(pet.ID); };
+                            
+                            infoDiv.appendChild(petName);
+                            infoDiv.appendChild(deleteBtn);
+                            petCard.appendChild(infoDiv);
+                            
+                            // Add to container
+                            container.appendChild(petCard);
+                        });
+                    } else {
+                        noPets.style.display = 'block';
+                    }
+                } else {                    throw new Error(data.message || 'Error fetching pets');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                loading.style.display = 'none';
+                
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'error-message';
+                let errorMessage = error.message;
+                
+                // Try to parse error message if it's JSON
+                try {
+                    const errorData = JSON.parse(error.message);
+                    errorMessage = errorData.message || errorMessage;
+                } catch (e) {
+                    // Not JSON, use as is
+                }
+                
+                errorDiv.textContent = 'Failed to load pets: ' + errorMessage;
+                container.appendChild(errorDiv);
+            }
+        }
+        
+        // Delete pet function
         function deletePet(petId) {
             if (confirm('Are you sure you want to delete this pet?')) {
-                fetch('../controllers/PetController.php', {
+                fetch(`../public/api.php?type=pets&action=delete_pet&id=${petId}`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: 'action=delete&pet_id=' + petId,
-                    credentials: 'same-origin'
-                })
-                .then(async response => {
+                })                .then(async response => {
                     const text = await response.text();
                     try {
                         const data = JSON.parse(text);
@@ -199,7 +295,8 @@ $pets = $controller->getUserPets($_SESSION['user_id']);
                 })
                 .then(data => {
                     if (data.success) {
-                        location.reload();
+                        // Refresh the page to show updated list
+                        window.location.reload();
                     } else {
                         throw new Error(data.message || 'Unknown error occurred');
                     }
@@ -212,4 +309,4 @@ $pets = $controller->getUserPets($_SESSION['user_id']);
         }
     </script>
 </body>
-</html> 
+</html>

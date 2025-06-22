@@ -11,7 +11,7 @@ function checkAuth() {
     $decoded = JWTManager::validateToken($token);
 
     if (!$decoded) {
-        // Token invalid sau expirat
+
         setcookie('jwt_token', '', time() - 3600, '/');
         header('Location: login.php');
         exit();

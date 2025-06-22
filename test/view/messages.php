@@ -5,6 +5,11 @@ $user = checkAuth();
 session_start();
 require_once '../controllers/MessageController.php';
 
+// Helper function to prevent deprecated warnings when using htmlspecialchars with null values
+function safeEcho($value, $default = '') {
+    return htmlspecialchars($value ?? $default);
+}
+
 $controller = new MessageController();
 
 // Get pet_id and owner_id from URL if starting new conversation
@@ -68,13 +73,16 @@ if ($selectedConversationId) {
                        class="conversation-item <?php echo $selectedConversationId == $conv['CONVERSATION_ID'] ? 'active' : ''; ?>">
                         <div class="conversation-info">
                             <div class="user-name">
-                                <?php echo htmlspecialchars($conv['OTHER_USER_NAME'] . ' ' . $conv['OTHER_USER_SURNAME']); ?>
+                                <?php echo safeEcho(($conv['OTHER_USER_NAME'] ?? '') . ' ' . ($conv['OTHER_USER_SURNAME'] ?? '')); ?>
                             </div>
                             <div class="pet-name">
-                                About: <?php echo htmlspecialchars($conv['PET_NAME']); ?>
+                                About: <?php echo safeEcho($conv['PET_NAME'] ?? ''); ?>
                             </div>
                             <div class="last-message">
-                                <?php echo htmlspecialchars(substr($conv['LAST_MESSAGE'], 0, 50)) . (strlen($conv['LAST_MESSAGE']) > 50 ? '...' : ''); ?>
+                                <?php 
+                                    $lastMessage = $conv['LAST_MESSAGE'] ?? '';
+                                    echo safeEcho(substr($lastMessage, 0, 50)) . (strlen($lastMessage) > 50 ? '...' : ''); 
+                                ?>
                             </div>
                         </div>
                         <?php if ($conv['UNREAD_COUNT'] > 0): ?>
@@ -88,33 +96,33 @@ if ($selectedConversationId) {
         <div class="chat-container">
             <?php if ($selectedConversationId || ($petId && $ownerId)): ?>
                 <div class="chat-messages" id="chat-messages">
-                    <?php if (!empty($messages)): ?>
-                        <?php foreach ($messages as $message): ?>
+                    <?php if (!empty($messages)): ?>                        <?php foreach ($messages as $message): 
+                            if (isset($message['MESSAGE_TEXT']) && trim($message['MESSAGE_TEXT']) !== ''): ?>
                             <div class="message <?php echo $message['SENDER_ID'] == $user->id ? 'sent' : 'received'; ?>">
                                 <div class="message-content">
-                                    <?php echo nl2br(htmlspecialchars($message['MESSAGE_TEXT'])); ?>
+                                    <?php echo nl2br(safeEcho($message['MESSAGE_TEXT'])); ?>
                                 </div>
                             </div>
+                            <?php endif; ?>
                         <?php endforeach; ?>
                     <?php elseif ($petId && $ownerId): ?>
                         <div class="start-conversation">
-                            <p>Start a conversation about <?php echo htmlspecialchars($pet['NAME']); ?></p>
+                            <p>Start a conversation about <?php echo !empty($pet['NAME']) ? safeEcho($pet['NAME']) : 'this pet'; ?></p>
                         </div>
                     <?php endif; ?>
                 </div>
 
-                <form class="message-form" id="message-form" method="POST">
-                    <input type="hidden" name="receiver_id" value="<?php 
+                <form class="message-form" id="message-form" method="POST">                    <input type="hidden" name="receiver_id" value="<?php 
                         if ($ownerId) {
                             echo $ownerId;
-                        } elseif (!empty($messages)) {
+                        } elseif (!empty($messages) && isset($messages[0]['SENDER_ID'], $messages[0]['RECEIVER_ID'])) {
                             echo $messages[0]['SENDER_ID'] == $user->id ? $messages[0]['RECEIVER_ID'] : $messages[0]['SENDER_ID'];
                         }
                     ?>">
                     <input type="hidden" name="pet_id" value="<?php 
                         if ($petId) {
                             echo $petId;
-                        } elseif (!empty($messages)) {
+                        } elseif (!empty($messages) && isset($messages[0]['PET_ID'])) {
                             echo $messages[0]['PET_ID'];
                         }
                     ?>">
@@ -170,4 +178,4 @@ if ($selectedConversationId) {
         });
     </script>
 </body>
-</html> 
+</html>

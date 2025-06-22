@@ -1,16 +1,12 @@
 <?php
-// Prevent any output before our JSON response
 ob_start();
 
 require_once '../models/Pet.php';
 require_once '../config/database.php';
 require_once '../utils/auth_middleware.php';
 
-// Function to send JSON response and exit
 function sendJsonResponse($success, $message = null, $data = null) {
-    // Clear any previous output
     ob_clean();
-    
     header('Content-Type: application/json');
     $response = ['success' => $success];
     
@@ -27,11 +23,9 @@ function sendJsonResponse($success, $message = null, $data = null) {
     exit;
 }
 
-// Handle direct script access
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     session_start();
     
-    // Check if user is authenticated
     if (!isset($_SESSION['user_id'])) {
         sendJsonResponse(false, 'Not authenticated');
     }
@@ -60,8 +54,7 @@ class PetController {
         $this->db = getConnection();
         $this->petModel = new Pet($this->db);
     }
-    
-    public function __destruct() {
+      public function __destruct() {
         if ($this->db) {
             oci_close($this->db);
         }
@@ -97,9 +90,7 @@ class PetController {
         } catch (Exception $e) {
             return ['error' => $e->getMessage()];
         }
-    }
-
-    public function createPet($data, $files = null) {
+    }    public function createPet($data, $files = null) {
         try {
             $requiredFields = [
                 'name', 'species', 'breed', 'age', 'gender', 'health_status',
@@ -141,6 +132,7 @@ class PetController {
             ];
 
         } catch (Exception $e) {
+            error_log("Exception in createPet: " . $e->getMessage());
             return ['error' => $e->getMessage()];
         }
     }
@@ -167,10 +159,7 @@ class PetController {
             $user_id = $_SESSION['user_id'];
             if (!$user_id) {
                 throw new Exception("User not authenticated");
-            }
-
-            // Verificăm dacă utilizatorul este proprietarul animalului
-            $pet = $this->petModel->getPetById($pet_id);
+            }            $pet = $this->petModel->getPetById($pet_id);
             if (!$pet) {
                 throw new Exception("Pet not found");
             }
@@ -195,13 +184,11 @@ class PetController {
 
     public function getDefaultPetImage($petId, $species) {
         try {
-            // First try to get the uploaded image
             $media = $this->petModel->getPetMedia($petId);
             if (!empty($media) && isset($media[0]['URL']) && !empty($media[0]['URL'])) {
                 return '../' . $media[0]['URL'];
             }
 
-            // If no uploaded image, try species-specific default
             $defaultImages = [
                 'Dog' => '../stiluri/imagini/dog.png',
                 'Cat' => '../stiluri/imagini/cat.png',
@@ -210,11 +197,9 @@ class PetController {
                 'Reptile' => '../stiluri/imagini/reptilian.png'
             ];
 
-            // Return species-specific image if exists, otherwise return empty string
             return isset($defaultImages[$species]) ? $defaultImages[$species] : '';
         } catch (Exception $e) {
-            // În caz de eroare, returnăm string gol
             return '';
         }
     }
-} 
+}

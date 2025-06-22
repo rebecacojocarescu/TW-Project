@@ -32,35 +32,41 @@
     </div>
     <div id="rss-feed" class="rss-container"></div>
   </section>
-
   <script>
     async function fetchRssFeed() {
       try {
-        const response = await fetch('../public/api/rss-feed.php');
-        const items = await response.json();
+        const response = await fetch('../public/rss.php');
+        const text = await response.text();
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(text, "text/xml");
+        const items = xmlDoc.querySelectorAll("item");
         
         const feedContainer = document.getElementById('rss-feed');
         feedContainer.innerHTML = '';
+        
         if (items.length === 0) {
           feedContainer.innerHTML = '<p style="text-align:center;">Nu există animale disponibile momentan.</p>';
           return;
         }
+        
         items.forEach(item => {
+          const title = item.querySelector('title')?.textContent || '';
+          const link = item.querySelector('link')?.textContent || '#';
+          const description = item.querySelector('description')?.textContent || '';
+          
           const itemElement = document.createElement('div');
           itemElement.className = 'rss-item';
           itemElement.innerHTML = `
-            ${item.image ? `<img src="${item.image}" alt="${item.title}" class="rss-pet-image">` : ''}
-            <h3>${item.title}</h3>
-            <div class="meta">
-              ${item.date ? new Date(item.date).toLocaleDateString() : ''}
-            </div>
-            <div class="description">${item.description}</div>
-            <a href="${item.link}" class="details-btn">Vezi detalii</a>
+            <h3>${title}</h3>
+            <div class="description">${description}</div>
+            <a href="${link}" class="details-btn">Vezi detalii</a>
           `;
           feedContainer.appendChild(itemElement);
         });
       } catch (error) {
         console.error('Error fetching RSS feed:', error);
+        document.getElementById('rss-feed').innerHTML = 
+          '<p style="text-align:center; color: #d9534f;">Nu s-a putut încărca fluxul RSS. Vă rugăm încercați din nou mai târziu.</p>';
       }
     }
 

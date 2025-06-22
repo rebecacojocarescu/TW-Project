@@ -2,7 +2,6 @@
     require_once __DIR__. '/../models/User.php';
     require_once __DIR__. '/../utils/JWTManager.php';
     
-    // Prevent any output before our JSON response
     error_reporting(0);
     ini_set('display_errors', 0);
     
@@ -34,7 +33,6 @@
         }
 
         public function register($data) {
-            // Ensure no output has been sent yet
             if (headers_sent($filename, $linenum)) {
                 error_log("Headers already sent in $filename on line $linenum");
                 echo json_encode([
@@ -44,7 +42,6 @@
                 exit();
             }
 
-            // Set proper JSON headers
             header('Content-Type: application/json');
             header('Cache-Control: no-cache, must-revalidate');
             
@@ -102,7 +99,6 @@
         }
 
         public function login($data) {
-            // Set proper JSON headers
             header('Content-Type: application/json');
             header('Cache-Control: no-cache, must-revalidate');
             
@@ -119,7 +115,6 @@
                 $authenticated = $user->authenticate($data['name'], $data['surname'], $data['password']);
 
                 if($authenticated) {
-                    // Generate JWT token
                     $userData = (object)[
                         'id' => $authenticated['ID'],
                         'name' => $data['name'],
@@ -152,7 +147,6 @@
         }
     }
 
-    // Handle incoming requests
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $controller = new AuthController();
         

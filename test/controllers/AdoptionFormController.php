@@ -33,6 +33,7 @@ class AdoptionFormController {
             $this->model->submitForm($formData);
             return ['success' => true];
         } catch (Exception $e) {
+            error_log("Error in processForm: " . $e->getMessage());
             return ['error' => $e->getMessage()];
         }
     }
@@ -70,6 +71,30 @@ class AdoptionFormController {
         }
 
         return $errors;
+    }
+
+    public function checkExistingSubmission($petId) {
+        try {
+            if (!isset($_SESSION['user_id'])) {
+                throw new Exception('User must be logged in to check submission');
+            }
+
+            $userId = $_SESSION['user_id'];
+            $exists = $this->model->hasExistingSubmission($userId, $petId);
+
+            header('Content-Type: application/json');
+            echo json_encode([
+                'success' => true,
+                'exists' => $exists
+            ]);
+        } catch (Exception $e) {
+            error_log("Error in checkExistingSubmission: " . $e->getMessage());
+            http_response_code(400);
+            echo json_encode([
+                'success' => false,
+                'message' => $e->getMessage()
+            ]);
+        }
     }
 
     public function updateStatus($formId, $status) {
@@ -118,10 +143,11 @@ class AdoptionFormController {
                 ];
             }
         } catch (Exception $e) {
+            error_log("Error in updateStatus: " . $e->getMessage());
             return [
                 'success' => false,
                 'message' => $e->getMessage()
             ];
         }
     }
-} 
+}

@@ -17,33 +17,56 @@ body, html {
     justify-content: space-between;
     align-items: center;
     padding: 10px 20px;
+    background-color: #f7f3e9;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
-.hamburger {
+.back-button {
     display: flex;
-    flex-direction: column;
-    gap: 4px;
+    align-items: center;
+    color: #224453;
+    text-decoration: none;
+    font-weight: bold;
+    transition: color 0.3s ease;
 }
 
-.hamburger span {
-    width: 25px;
-    height: 3px;
-    background: black;
+.back-button:hover {
+    color: #ED5C01;
+}
+
+.back-arrow {
+    margin-right: 5px;
+    font-size: 1.2rem;
+}
+
+.logo-link {
+    text-decoration: none;
 }
 
 .logo {
-  color: #224453;
-  font-weight: bold;    
-  text-align: center;
-  font-size: 1rem;
-  padding-top: 30px;
+    color: #224453;
+    font-weight: bold;    
+    text-align: center;
+    font-size: 1.5rem;
+    padding: 10px;
+    transition: color 0.3s ease;
+}
+
+.logo:hover {
+    color: #ED5C01;
+}
+
+.profile-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .profile-icon img {
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    padding-top: 30px;
+    object-fit: cover;
 }
 
 .formular-banner {
@@ -63,6 +86,8 @@ body, html {
 .adoption-form {
   padding: 30px 150px;
   margin: 0;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .section-title {
@@ -143,9 +168,11 @@ body, html {
 
 .radio-group {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-start;
+    gap: 30px;
     max-width: 600px;
     margin-bottom: 25px;
+    flex-wrap: wrap;
 }
 
 .radio-label {
@@ -195,6 +222,7 @@ body, html {
 .terms-section {
     padding: 30px 150px;
     background-color: #EBE3CC;
+    box-sizing: border-box;
 }
 
 .terms-list {
@@ -276,6 +304,7 @@ body, html {
     margin: 0 auto;
     font-family: 'Josefin Sans', sans-serif;
     transition: background-color 0.3s ease;
+    max-width: 80%;
 }
 
 .submit-btn:hover {
@@ -315,8 +344,18 @@ body, html {
 }
 
 .back-btn {
-    background-color: #37474f;
+    display: inline-block;
+    background-color: #224453;
     color: white;
+    padding: 10px 20px;
+    border-radius: 20px;
+    text-decoration: none;
+    font-weight: bold;
+    transition: background-color 0.3s ease;
+}
+
+.back-btn:hover {
+    background-color: #1a3540;
 }
 
 .accept-btn {
@@ -355,5 +394,125 @@ body, html {
 }
 
 .radio-group {
-    pointer-events: none;
+    pointer-events: auto; /* Enable interaction with radio buttons */
+    /* Other properties already defined above */
+}
+
+.error-messages {
+    background-color: #ffebeb;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+    padding: 15px;
+    margin: 20px 150px;
+    border-radius: 5px;
+    font-weight: bold;
+    box-sizing: border-box;
+}
+
+.success-message {
+    background-color: #d4edda;
+    border: 1px solid #c3e6cb;
+    color: #155724;
+    padding: 15px;
+    margin: 20px 150px;
+    border-radius: 5px;
+    font-weight: bold;
+    text-align: center;
+    box-sizing: border-box;
+}
+
+.error {
+    margin-bottom: 10px;
+}
+
+.return-link {
+    margin-top: 20px;
+    text-align: center;
+}
+
+/* Responsive Styles */
+@media screen and (max-width: 768px) {
+    .adoption-form {
+        padding: 20px;
+        margin: 0;
+    }
+    
+    .section-title {
+        padding: 10px 20px;
+    }
+    
+    .form-group.two-col {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .city-country-row {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .radio-group {
+        flex-direction: column;
+        gap: 10px;
+        align-items: flex-start;
+    }
+    
+    .radio-label {
+        margin-bottom: 5px;
+    }
+    
+    .terms-section {
+        padding: 20px;
+    }
+    
+    .error-messages {
+        margin: 20px;
+    }
+    
+    .submit-btn {
+        width: 100%;
+        max-width: 300px;
+    }
+}
+
+/* Even smaller screens like phones */
+@media screen and (max-width: 480px) {
+    .navbar {
+        padding: 10px;
+    }
+    
+    .back-button {
+        font-size: 0.9rem;
+    }
+    
+    .logo {
+        font-size: 1.2rem;
+    }
+    
+    .profile-icon img {
+        width: 35px;
+        height: 35px;
+    }
+    
+    .formular-banner h1 {
+        font-size: 1.2rem;
+    }
+    
+    .section-title h1 {
+        font-size: 1.2rem;
+    }
+    
+    .form-group label, 
+    .address-group label {
+        font-size: 0.9rem;
+    }
+    
+    .submit-btn {
+        padding: 12px 30px;
+        font-size: 1rem;
+    }
+    
+    .terms-list li {
+        font-size: 0.8rem;
+    }
 }

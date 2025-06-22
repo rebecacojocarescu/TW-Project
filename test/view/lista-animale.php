@@ -29,14 +29,13 @@ session_start();
         <form method="GET">
           <div class="filters">
             <div class="filter-group">
-              <label for="type">Type:</label>
-              <select id="type" name="type">
+              <label for="type">Type:</label>              <select id="type" name="animal_type">
                 <option value="">Select...</option>
-                <option value="cat" <?php echo ($_GET['type'] ?? '') === 'cat' ? 'selected' : ''; ?>>Cat</option>
-                <option value="dog" <?php echo ($_GET['type'] ?? '') === 'dog' ? 'selected' : ''; ?>>Dog</option>
-                <option value="bird" <?php echo ($_GET['type'] ?? '') === 'bird' ? 'selected' : ''; ?>>Bird</option>
-                <option value="fish" <?php echo ($_GET['type'] ?? '') === 'fish' ? 'selected' : ''; ?>>Fish</option>
-                <option value="reptile" <?php echo ($_GET['type'] ?? '') === 'reptile' ? 'selected' : ''; ?>>Reptile</option>
+                <option value="cat" <?php echo ($_GET['animal_type'] ?? '') === 'cat' ? 'selected' : ''; ?>>Cat</option>
+                <option value="dog" <?php echo ($_GET['animal_type'] ?? '') === 'dog' ? 'selected' : ''; ?>>Dog</option>
+                <option value="bird" <?php echo ($_GET['animal_type'] ?? '') === 'bird' ? 'selected' : ''; ?>>Bird</option>
+                <option value="fish" <?php echo ($_GET['animal_type'] ?? '') === 'fish' ? 'selected' : ''; ?>>Fish</option>
+                <option value="reptile" <?php echo ($_GET['animal_type'] ?? '') === 'reptile' ? 'selected' : ''; ?>>Reptile</option>
               </select>
             </div>
             <div class="filter-group">
@@ -70,69 +69,103 @@ session_start();
             <button type="submit" class="filter-btn">Filter</button>
             <button type="reset" class="reset-btn" onclick="window.location.href='lista-animale.php'">Reset</button>
           </div>
-        </form>
-
-        <div class="cards-container">
-          <?php
-          require_once('../config/database.php');
-          require_once('../models/Animal.php');
-
-          $type = $_GET['type'] ?? null;
-          $gender = $_GET['sex'] ?? null;
-          $age = $_GET['age'] ?? null;
-          $size = $_GET['weight'] ?? null;
-          
-          $animals = Animal::filterAnimals($type, $gender, $age, $size);
-          
-          if (empty($animals)) {
-              echo '<div class="no-results">No animals found matching your criteria.</div>';
-          } else {
-              $conn = getConnection();
-              
-              foreach ($animals as $animal) {
-                  $query = "SELECT url FROM media WHERE pet_id = :pet_id AND type = 'photo' AND ROWNUM = 1";
-                  $stmt = oci_parse($conn, $query);
-                  oci_bind_by_name($stmt, ":pet_id", $animal['id']);
-                  oci_execute($stmt);
-                  $image = oci_fetch_assoc($stmt);
-                  oci_free_statement($stmt);
-
-                  echo '<a class="card-link" href="pet-page.php?id=' . htmlspecialchars($animal['id']) . '">';
-                  echo '<div class="card">';
-                  echo '<h3>' . htmlspecialchars($animal['name']) . '</h3>';
-                  
-                  if ($image && isset($image['URL'])) {
-                      echo '<img src="../' . htmlspecialchars($image['URL']) . '" alt="' . htmlspecialchars($animal['name']) . '" />';
-                  } else {
-                      echo '<img src="../stiluri/imagini/' . strtolower($animal['species']) . '.png" alt="' . htmlspecialchars($animal['species']) . '" />';
-                  }
-                  
-                  echo '<p>Type: ' . htmlspecialchars($animal['species']) . '</p>';
-                  
-                  if (!empty($animal['age'])) {
-                      echo '<p>Age: ' . htmlspecialchars($animal['age']) . ' years</p>';
-                  }
-                  
-                  if (!empty($animal['breed'])) {
-                      echo '<p>Breed: ' . htmlspecialchars($animal['breed']) . '</p>';
-                  }
-                  
-                  if (!empty($animal['gender'])) {
-                      echo '<p>Sex: ' . htmlspecialchars($animal['gender']) . '</p>';
-                  }
-                  
-                  $statusClass = $animal['available_for_adoption'] ? 'available' : 'not-available';
-                  $statusText = $animal['available_for_adoption'] ? 'Available for Adoption' : 'Not Available';
-                  echo '<div class="adoption-status ' . $statusClass . '">' . $statusText . '</div>';
-                  
-                  echo '</div>';
-                  echo '</a>';
-              }
-              
-              oci_close($conn);
-          }
-          ?>
+        </form>        <div class="cards-container" id="animals-container">
+          <!-- Animals will be loaded here via AJAX -->
+          <div class="loading">Loading animals...</div>
         </div>
+        
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initial load of animals
+            loadAnimals();
+            
+            // Set up form submission via AJAX
+            const filterForm = document.querySelector('form');
+            filterForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                loadAnimals();
+            });
+            
+            // Reset button handler
+            document.querySelector('.reset-btn').addEventListener('click', function(e) {
+                e.preventDefault();
+                filterForm.reset();
+                loadAnimals();
+            });
+            
+            // Function to load animals via AJAX
+            function loadAnimals() {
+                const container = document.getElementById('animals-container');
+                container.innerHTML = '<div class="loading">Loading animals...</div>';
+                  // Get filter values
+                const animalType = document.getElementById('type').value;
+                const gender = document.getElementById('sex').value;
+                const age = document.getElementById('age').value;
+                const size = document.getElementById('weight').value;                // Build query string
+                let queryParams = new URLSearchParams();
+                
+                if (animalType) queryParams.append('animal_type', animalType);
+                if (gender) queryParams.append('sex', gender);
+                if (age) queryParams.append('age', age);
+                if (size) queryParams.append('weight', size);
+                  // Make AJAX request - adăugăm type și action direct în URL
+                const apiUrl = `../public/api.php?type=pets&action=list${queryParams.toString() ? '&' + queryParams.toString() : ''}`;
+                console.log('Fetching URL:', apiUrl); // Debug
+                  fetch(apiUrl)
+                    .then(response => response.json())                    .then(data => {
+                        console.log('API Response:', data);
+                        
+                        if (data.success) {
+                            if (data.animals.length === 0) {
+                                container.innerHTML = '<div class="no-results">No animals found matching your criteria.</div>';
+                            } else {
+                                container.innerHTML = '';
+                                data.animals.forEach(animal => {
+                                    const card = document.createElement('a');
+                                    card.className = 'card-link';
+                                    card.href = `pet-page.php?id=${animal.id}`;
+                                    
+                                    const statusClass = animal.available_for_adoption ? 'available' : 'not-available';
+                                    const statusText = animal.available_for_adoption ? 'Available for Adoption' : 'Not Available';
+                                    
+                                    card.innerHTML = `
+                                        <div class="card">
+                                            <h3>${animal.name}</h3>
+                                            <img src="${animal.image}" alt="${animal.name}" />
+                                            <p>Type: ${animal.species}</p>
+                                            ${animal.age ? `<p>Age: ${animal.age} years</p>` : ''}
+                                            ${animal.breed ? `<p>Breed: ${animal.breed}</p>` : ''}
+                                            ${animal.gender ? `<p>Sex: ${animal.gender}</p>` : ''}
+                                            <div class="adoption-status ${statusClass}">${statusText}</div>
+                                        </div>
+                                    `;
+                                    
+                                    container.appendChild(card);
+                                });
+                            }
+                        } else {
+                            container.innerHTML = `<div class="error">Error loading animals: ${data.message}</div>`;
+                        }
+                    })                    .catch(error => {
+                        container.innerHTML = '<div class="error">Error connecting to server. Please try again later.</div>';
+                        console.error('Error loading animals:', error);
+                        // Log more details about the error
+                        if (error.response) {
+                            console.error('Response status:', error.response.status);
+                            error.response.text().then(text => {
+                                console.error('Response text:', text);
+                            });
+                        }
+                    });                // Update URL with filter parameters (for bookmarking/sharing - using the same parameter names as the API)
+                const pageUrl = new URL(window.location);
+                if (animalType) pageUrl.searchParams.set('animal_type', animalType); else pageUrl.searchParams.delete('animal_type');
+                if (gender) pageUrl.searchParams.set('sex', gender); else pageUrl.searchParams.delete('sex');
+                if (age) pageUrl.searchParams.set('age', age); else pageUrl.searchParams.delete('age');
+                if (size) pageUrl.searchParams.set('weight', size); else pageUrl.searchParams.delete('weight');
+                window.history.pushState({}, '', pageUrl);
+            }
+        });
+        </script>
       </div>
     </div>
   </body>

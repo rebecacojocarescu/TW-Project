@@ -1,10 +1,7 @@
 <?php
 session_start();
-require_once '../controllers/NotificationController.php';
 require_once '../utils/auth_middleware.php';
-$notificationController = new NotificationController();
 $user = checkAuth();
-$unreadCount = $notificationController->getUnreadCount();
 
 // Set session variables from user object if needed
 $_SESSION['user_id'] = $user->id;
@@ -42,12 +39,9 @@ $_SESSION['is_admin'] = $user->is_admin ?? false;
             <div class="nav-right">
                 <a href="messages.php" class="messages-link">Messages</a>
                 <a href="news.php" class="messages-link">News</a>
-                <?php if (isset($_SESSION['user_id'])): ?>
-                <a href="notifications.php" class="messages-link">
+                <?php if (isset($_SESSION['user_id'])): ?>                <a href="notifications.php" class="messages-link">
                     Notify
-                    <?php if ($unreadCount > 0): ?>
-                        <span class="notify-count"><?php echo $unreadCount; ?></span>
-                    <?php endif; ?>
+                    <span id="notification-count" class="notify-count" style="display: none;"></span>
                 </a>
                 <?php endif; ?>
                 <a href="profile.php" class="profile-icon">
@@ -125,5 +119,31 @@ $_SESSION['is_admin'] = $user->is_admin ?? false;
             </div>
         </section>
 
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                // Fetch unread notification count
+                fetchUnreadNotifications();
+                
+                // Set up interval to check for new notifications every 60 seconds
+                setInterval(fetchUnreadNotifications, 60000);
+                
+                function fetchUnreadNotifications() {
+                    fetch('../public/api.php?type=notifications&action=get_unread_count')
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success && data.count > 0) {
+                                const countElement = document.getElementById('notification-count');
+                                countElement.textContent = data.count;
+                                countElement.style.display = 'inline-block';
+                            } else {
+                                document.getElementById('notification-count').style.display = 'none';
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error fetching notifications:', error);
+                        });
+                }
+            });
+        </script>
     </body>
 </html>

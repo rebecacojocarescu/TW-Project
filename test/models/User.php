@@ -19,7 +19,7 @@ class User {
         $stmt = oci_parse($this->conn, $query);
         
         if (!$stmt) {
-            error_log("Authentication failed: Could not parse query");
+
             throw new Exception("Could not parse query");
         }
         
@@ -29,7 +29,7 @@ class User {
         $execute = oci_execute($stmt);
         
         if (!$execute) {
-            error_log("Authentication failed: Could not execute query");
+
             throw new Exception("Could not execute query");
         }
         
@@ -37,16 +37,16 @@ class User {
         oci_free_statement($stmt);
         
         if (!$user) {
-            error_log("Authentication failed: No user found with name=$name and surname=$surname");
+
             return false;
         }
         
         if (!password_verify($password, $user['PASSWORD'])) {
-            error_log("Authentication failed: Password verification failed for user=$name $surname");
+
             return false;
         }
         
-        error_log("Authentication successful for user=$name $surname");
+
         return $user;
     }
     
@@ -59,7 +59,7 @@ class User {
             
             if (!$stmt) {
                 $error = oci_error($this->conn);
-                error_log("Parse error in createUser: " . json_encode($error));
+
                 throw new Exception("Database error while creating user");
             }
             
@@ -72,7 +72,7 @@ class User {
             
             if (!$execute) {
                 $error = oci_error($stmt);
-                error_log("Execute error in createUser: " . json_encode($error));
+
                 throw new Exception("Failed to create user: " . $error['message']);
             }
             
@@ -89,11 +89,15 @@ class User {
         }
     }
     
+    /**
+     * Get user by ID
+     */
     public function getUserById($id) {
         $query = "SELECT * FROM users WHERE id = :id";
         $stmt = oci_parse($this->conn, $query);
         
         if (!$stmt) {
+            error_log("GetUserById failed: Could not parse query");
             throw new Exception("Could not parse query");
         }
         
@@ -102,13 +106,29 @@ class User {
         $execute = oci_execute($stmt);
         
         if (!$execute) {
+            error_log("GetUserById failed: Could not execute query");
             throw new Exception("Could not execute query");
         }
-        
-        $user = oci_fetch_assoc($stmt);
+          $user = oci_fetch_assoc($stmt);
         oci_free_statement($stmt);
         
-        return $user;
+        if ($user) {
+            // Ensure consistent field casing
+            return [
+                'ID' => isset($user['ID']) ? (int)$user['ID'] : null,
+                'NAME' => $user['NAME'] ?? '',
+                'SURNAME' => $user['SURNAME'] ?? '',
+                'EMAIL' => $user['EMAIL'] ?? '',
+                'PASSWORD' => $user['PASSWORD'] ?? '',
+                'LOCATION' => $user['LOCATION'] ?? '',
+                'IS_FAMILY' => isset($user['IS_FAMILY']) ? (bool)$user['IS_FAMILY'] : false,
+                'LATITUDE' => isset($user['LATITUDE']) ? (float)$user['LATITUDE'] : null,
+                'LONGITUDE' => isset($user['LONGITUDE']) ? (float)$user['LONGITUDE'] : null,
+                'ROL' => $user['ROL'] ?? ''
+            ];
+        }
+        
+        return null;
     }
     
     public function updateUser($id, $data) {
@@ -216,4 +236,4 @@ class User {
         
         return $pets;
     }
-} 
+}

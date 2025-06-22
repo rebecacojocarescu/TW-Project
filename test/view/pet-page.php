@@ -3,35 +3,18 @@ require_once '../utils/auth_middleware.php';
 $user = checkAuth();
 
 session_start();
-require_once '../controllers/PetController.php';
 
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
 $pet_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-
-$controller = new PetController();
-try {
-    $result = $controller->showPetDetails($pet_id);
-    if (isset($result['error'])) {
-        throw new Exception($result['error']);
-    }
-    $pet = $result['pet'];
-    $media = $result['media'];
-
-    // Obținem toate animalele pentru hartă
-    $allPets = $controller->getAllPetsWithCoordinates();
-} catch (Exception $e) {
-    echo "Error: " . $e->getMessage();
-    exit;
-}
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title><?php echo htmlspecialchars($pet['NAME']); ?> - Pow</title>
+    <title>Pet Details - Pow</title>
     <link rel="stylesheet" href="../stiluri/pet-page.css" />
     <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans&display=swap" rel="stylesheet">
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC9pBmG3InVXEsgC5Hee4KPpU8n87dNNzQ"></script>
@@ -41,6 +24,34 @@ try {
             height: 500px;
             border-radius: 10px;
             margin-top: 20px;
+        }
+        .loading-spinner {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 20px auto;
+        }
+        .loading-spinner::after {
+            content: "";
+            width: 50px;
+            height: 50px;
+            border: 6px solid #e0e0e0;
+            border-top: 6px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        .error-message {
+            color: #d9534f;
+            background-color: #f9f2f2;
+            border: 1px solid #d9534f;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
@@ -59,100 +70,238 @@ try {
     </header>
 
     <section class="pet-banner">
-        <h1><?php echo htmlspecialchars($pet['NAME']); ?></h1>
+        <h1 id="pet-name">Loading pet details...</h1>
     </section>
-
-    <div class="pet-photos">
-        <div class="photo-container">
-            <?php if (!empty($media)): ?>
-                <?php foreach ($media as $image): ?>
-                    <img src="../<?php echo htmlspecialchars($image['URL']); ?>" alt="<?php echo htmlspecialchars($pet['NAME']); ?> photo" class="pet-photo">
-                <?php endforeach; ?>
-            <?php else: ?>
-                <img src="../stiluri/imagini/<?php echo strtolower($pet['SPECIES']); ?>.png" alt="<?php echo htmlspecialchars($pet['NAME']); ?>" class="pet-photo">
-            <?php endif; ?>
-        </div>
-    </div>
-
-    <section class="pet-info">
-        <div class="description">
-            <h2><?php echo htmlspecialchars($pet['NAME']); ?> Description</h2>
-        </div>
-        <div class="info-section">
-            <h2>Personality:</h2>
-            <p><?php echo nl2br(htmlspecialchars($pet['PERSONALITY_DESCRIPTION'])); ?></p>
+    
+    <div id="error-container" style="display: none;"></div>    <div id="loading-spinner" class="loading-spinner"></div>
+    
+    <div id="pet-content" style="display: none;">
+        <div class="pet-photos">
+            <div id="photo-container" class="photo-container">
+                <!-- Photos will be added here by JavaScript -->
+            </div>
         </div>
 
-        <div class="info-section">
-            <h2>Activity:</h2>
-            <p><?php echo nl2br(htmlspecialchars($pet['ACTIVITY_DESCRIPTION'])); ?></p>
-        </div>
+        <section class="pet-info">
+            <div class="description">
+                <h2 id="pet-name-description">Pet Description</h2>
+            </div>
+            <div class="info-section">
+                <h2>Personality:</h2>
+                <p id="personality-description"></p>
+            </div>
 
-        <div class="info-section">
-            <h2>Diet:</h2>
-            <p><?php echo nl2br(htmlspecialchars($pet['DIET_DESCRIPTION'])); ?></p>
-        </div>
-    </section>
+            <div class="info-section">
+                <h2>Activity:</h2>
+                <p id="activity-description"></p>
+            </div>
 
-    <section class="profile-summary">
+            <div class="info-section">
+                <h2>Diet:</h2>
+                <p id="diet-description"></p>
+            </div>
+        </section>    <section class="profile-summary">
         <h2 class="section-title">Current Home Life</h2>
         <div class="profile-row">
             <span class="label">Household Activity</span>
-            <span class="value"><?php echo htmlspecialchars($pet['HOUSEHOLD_ACTIVITY']); ?></span>
+            <span id="household-activity" class="value"></span>
         </div>
         <div class="profile-row">
             <span class="label">Household Environment</span>
-            <span class="value"><?php echo htmlspecialchars($pet['HOUSEHOLD_ENVIRONMENT']); ?></span>
+            <span id="household-environment" class="value"></span>
         </div>
         <div class="profile-row">
             <span class="label">Other Pets</span>
-            <span class="value"><?php echo htmlspecialchars($pet['OTHER_PETS']); ?></span>
+            <span id="other-pets" class="value"></span>
         </div>
 
-        <h2 class="section-title"><?php echo htmlspecialchars($pet['NAME']); ?> Profile Summary</h2>
-        <div class="profile-row"><span class="label">Colour:</span><span class="value"><?php echo htmlspecialchars($pet['COLOR']); ?></span></div>
-        <div class="profile-row"><span class="label">Breed:</span><span class="value"><?php echo htmlspecialchars($pet['BREED']); ?></span></div>
-        <div class="profile-row"><span class="label">Sex:</span><span class="value"><?php echo htmlspecialchars($pet['GENDER']); ?></span></div>
-        <div class="profile-row"><span class="label">Size:</span><span class="value"><?php echo htmlspecialchars($pet['MARIME']); ?></span></div>
-        <div class="profile-row"><span class="label">Age:</span><span class="value"><?php echo htmlspecialchars($pet['AGE']); ?> years</span></div>
-        <div class="profile-row"><span class="label">Spayed/Neutred:</span><span class="value"><?php echo $pet['SPAYED_NEUTERED'] ? 'Yes' : 'No'; ?></span></div>
-        <div class="profile-row"><span class="label">Time at current home:</span><span class="value"><?php echo htmlspecialchars($pet['TIME_AT_CURRENT_HOME']); ?></span></div>
-        <div class="profile-row"><span class="label">Reason for rehoming:</span><span class="value"><?php echo htmlspecialchars($pet['REASON_FOR_REHOMING']); ?></span></div>
-        <div class="profile-row"><span class="label">Flea treatment:</span><span class="value"><?php echo $pet['FLEA_TREATMENT'] ? 'Yes' : 'No'; ?></span></div>
-    </section>
-
-    <section class="owner-description">
+        <h2 class="section-title" id="profile-title">Profile Summary</h2>
+        <div class="profile-row"><span class="label">Colour:</span><span id="color" class="value"></span></div>
+        <div class="profile-row"><span class="label">Breed:</span><span id="breed" class="value"></span></div>
+        <div class="profile-row"><span class="label">Sex:</span><span id="gender" class="value"></span></div>
+        <div class="profile-row"><span class="label">Size:</span><span id="size" class="value"></span></div>
+        <div class="profile-row"><span class="label">Age:</span><span id="age" class="value"></span></div>
+        <div class="profile-row"><span class="label">Spayed/Neutred:</span><span id="spayed" class="value"></span></div>
+        <div class="profile-row"><span class="label">Time at current home:</span><span id="time-at-home" class="value"></span></div>
+        <div class="profile-row"><span class="label">Reason for rehoming:</span><span id="rehoming-reason" class="value"></span></div>
+        <div class="profile-row"><span class="label">Flea treatment:</span><span id="flea-treatment" class="value"></span></div>
+    </section>    <section class="owner-description">
         <div class="owner-description-content">
             <h2 class="section-title">Current Owner's Description</h2>
-            <p><?php echo nl2br(htmlspecialchars($pet['CURRENT_OWNER_DESCRIPTION'])); ?></p>
+            <p id="owner-description"></p>
         </div>
         <div class="adopt-section">
-            <?php
-            if (!empty($media)) {
-                echo '<img src="../' . htmlspecialchars($media[0]['URL']) . '" class="cat-image" alt="' . htmlspecialchars($pet['NAME']) . '">';
-            } else {
-                echo '<img src="../stiluri/imagini/' . strtolower($pet['SPECIES']) . '.png" class="cat-image" alt="' . htmlspecialchars($pet['SPECIES']) . '">';
-            }
-            ?>
-            <button class="adopt-btn" onclick="window.location.href='formular.php?pet_id=<?php echo $pet_id; ?>'">Adopt Me</button>
-            <button class="message-btn" onclick="window.location.href='messages.php?pet_id=<?php echo $pet_id; ?>&owner_id=<?php echo $pet['OWNER_ID']; ?>'">
-                <?php echo $user->id === $pet['OWNER_ID'] ? 'Test Messages' : 'Message Owner'; ?>
-            </button>
+            <img id="pet-main-image" class="cat-image" alt="Pet Image">
+            <button id="adopt-btn" class="adopt-btn">Adopt Me</button>
+            <button id="message-btn" class="message-btn">Message Owner</button>
         </div>
-    </section>
-
-    <section class="location">
+    </section>    <section class="location">
         <h2>Location Address</h2>
-        <p><?php echo htmlspecialchars($pet['ADOPTION_ADDRESS']); ?></p>
+        <p id="adoption-address"></p>
         <div id="map"></div>
     </section>
 
     <script>
-        function initMap() {
-            const currentPet = {
-                lat: <?php echo $pet['LATITUDE']; ?>,
-                lng: <?php echo $pet['LONGITUDE']; ?>
-            };
+        document.addEventListener('DOMContentLoaded', function() {
+            const petId = <?php echo $pet_id; ?>;
+            const userId = <?php echo $user->id; ?>;
+            
+            // Fetch pet details
+            fetchPetDetails(petId);
+            
+            // Event listeners for buttons
+            document.getElementById('adopt-btn').addEventListener('click', function() {
+                window.location.href = `formular.php?pet_id=${petId}`;
+            });
+        });        async function fetchPetDetails(petId) {
+            try {
+                // Log the request for debugging
+                console.log(`Fetching pet details for ID: ${petId}`);                // Use the MVC API endpoint dedicated to this page
+                const response = await fetch(`../public/api.php?type=pets&action=get_pet_page_data&id=${petId}`);
+                
+                // Check if response is OK
+                if (!response.ok) {
+                    console.error(`HTTP error: ${response.status} ${response.statusText}`);
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                
+                // Try to parse the JSON response
+                let data;
+                let responseText;
+                try {
+                    responseText = await response.text();
+                    console.log("Raw response:", responseText.substring(0, 500) + (responseText.length > 500 ? '...' : ''));
+                    
+                    data = JSON.parse(responseText);
+                } catch (parseError) {
+                    console.error("Failed to parse JSON:", parseError);
+                    console.error("Response text:", responseText);
+                    throw new Error("Invalid response format from server");
+                }
+                
+                console.log("Parsed data:", data);
+                  if (data && data.success) {
+                    // Check if pet data exists
+                    if (data.pet && typeof data.pet === 'object') {
+                        displayPetDetails(data);
+                        
+                        // Only initialize map if we have valid pet data
+                        if (data.pet.LATITUDE && data.pet.LONGITUDE) {
+                            initMap(data.pet, Array.isArray(data.allPetsWithCoordinates) ? data.allPetsWithCoordinates : []);
+                        } else {
+                            document.getElementById("map").innerHTML = "<p style='padding: 20px; text-align: center;'>Location information unavailable</p>";
+                        }
+                        
+                        // Show any warnings
+                        if (data.warnings && data.warnings.length > 0) {
+                            console.warn("API Warnings:", data.warnings);
+                        }
+                    } else {
+                        showError('Received invalid pet data from server');
+                    }
+                } else {
+                    showError(data && data.message ? data.message : 'Could not fetch pet details');
+                }
+            } catch (error) {
+                console.error("Fetch error:", error);
+                showError('Error fetching pet details: ' + error.message);
+            }
+        }
+        
+        function displayPetDetails(data) {
+            const pet = data.pet;
+            const media = data.media;
+            const userId = <?php echo $user->id; ?>;
+            
+            // Hide loading spinner and show content
+            document.getElementById('loading-spinner').style.display = 'none';
+            document.getElementById('pet-content').style.display = 'block';
+            
+            // Update pet details
+            document.title = pet.NAME + ' - Pow';
+            document.getElementById('pet-name').textContent = pet.NAME;
+            document.getElementById('pet-name-description').textContent = pet.NAME + ' Description';
+            document.getElementById('personality-description').innerHTML = nl2br(pet.PERSONALITY_DESCRIPTION);
+            document.getElementById('activity-description').innerHTML = nl2br(pet.ACTIVITY_DESCRIPTION);
+            document.getElementById('diet-description').innerHTML = nl2br(pet.DIET_DESCRIPTION);
+            
+            // Update home life
+            document.getElementById('household-activity').textContent = pet.HOUSEHOLD_ACTIVITY;
+            document.getElementById('household-environment').textContent = pet.HOUSEHOLD_ENVIRONMENT;
+            document.getElementById('other-pets').textContent = pet.OTHER_PETS;
+            
+            // Update profile summary
+            document.getElementById('profile-title').textContent = pet.NAME + ' Profile Summary';
+            document.getElementById('color').textContent = pet.COLOR;
+            document.getElementById('breed').textContent = pet.BREED;
+            document.getElementById('gender').textContent = pet.GENDER;
+            document.getElementById('size').textContent = pet.MARIME;
+            document.getElementById('age').textContent = pet.AGE + ' years';
+            document.getElementById('spayed').textContent = pet.SPAYED_NEUTERED ? 'Yes' : 'No';
+            document.getElementById('time-at-home').textContent = pet.TIME_AT_CURRENT_HOME;
+            document.getElementById('rehoming-reason').textContent = pet.REASON_FOR_REHOMING;
+            document.getElementById('flea-treatment').textContent = pet.FLEA_TREATMENT ? 'Yes' : 'No';
+            
+            // Update owner description
+            document.getElementById('owner-description').innerHTML = nl2br(pet.CURRENT_OWNER_DESCRIPTION);
+            document.getElementById('adoption-address').textContent = pet.ADOPTION_ADDRESS;
+            
+            // Update pet images
+            const photoContainer = document.getElementById('photo-container');
+            photoContainer.innerHTML = ''; // Clear container
+            
+            if (media && media.length > 0) {
+                media.forEach(image => {
+                    const img = document.createElement('img');
+                    img.src = '../' + image.URL;
+                    img.alt = pet.NAME + ' photo';
+                    img.className = 'pet-photo';
+                    photoContainer.appendChild(img);
+                });
+                
+                // Set main image for the adopt section
+                document.getElementById('pet-main-image').src = '../' + media[0].URL;
+                document.getElementById('pet-main-image').alt = pet.NAME;
+            } else {
+                // Use default species image
+                const speciesLower = pet.SPECIES.toLowerCase();
+                const img = document.createElement('img');
+                img.src = `../stiluri/imagini/${speciesLower}.png`;
+                img.alt = pet.SPECIES;
+                img.className = 'pet-photo';
+                photoContainer.appendChild(img);
+                
+                // Set main image for the adopt section
+                document.getElementById('pet-main-image').src = `../stiluri/imagini/${speciesLower}.png`;
+                document.getElementById('pet-main-image').alt = pet.SPECIES;
+            }
+            
+            // Setup message button
+            const messageBtn = document.getElementById('message-btn');
+            messageBtn.textContent = userId === parseInt(pet.OWNER_ID) ? 'Test Messages' : 'Message Owner';
+            messageBtn.addEventListener('click', function() {
+                window.location.href = `messages.php?pet_id=${pet.ID}&owner_id=${pet.OWNER_ID}`;
+            });
+        }
+          function initMap(pet, allPets) {
+            // Validate that we have valid pet data with coordinates
+            if (!pet || !pet.LATITUDE || !pet.LONGITUDE) {
+                console.error("Missing pet coordinates", pet);
+                document.getElementById("map").innerHTML = "<p style='padding: 20px; text-align: center;'>Location information unavailable</p>";
+                return;
+            }
+            
+            // Parse coordinates safely
+            const lat = parseFloat(pet.LATITUDE);
+            const lng = parseFloat(pet.LONGITUDE);
+            
+            if (isNaN(lat) || isNaN(lng)) {
+                console.error("Invalid coordinates", { lat, lng });
+                document.getElementById("map").innerHTML = "<p style='padding: 20px; text-align: center;'>Invalid location coordinates</p>";
+                return;
+            }
+            
+            const currentPet = { lat, lng };
 
             const map = new google.maps.Map(document.getElementById("map"), {
                 zoom: 15,
@@ -170,7 +319,7 @@ try {
             const currentMarker = new google.maps.Marker({
                 position: currentPet,
                 map: map,
-                title: "<?php echo htmlspecialchars($pet['NAME']); ?>'s Location",
+                title: pet.NAME + "'s Location",
                 icon: {
                     url: "http://maps.google.com/mapfiles/ms/icons/red-dot.png"
                 }
@@ -189,21 +338,20 @@ try {
             });
 
             // Adăugăm toate celelalte animale
-            const allPets = <?php echo json_encode($allPets); ?>;
             const markers = [];
             const bounds = new google.maps.LatLngBounds();
 
-            allPets.forEach(pet => {
-                if (pet.ID != <?php echo $pet_id; ?>) {
+            allPets.forEach(otherPet => {
+                if (otherPet.ID != pet.ID) {
                     const position = {
-                        lat: parseFloat(pet.LATITUDE),
-                        lng: parseFloat(pet.LONGITUDE)
+                        lat: parseFloat(otherPet.LATITUDE),
+                        lng: parseFloat(otherPet.LONGITUDE)
                     };
 
                     const marker = new google.maps.Marker({
                         position: position,
                         map: map,
-                        title: pet.NAME,
+                        title: otherPet.NAME,
                         icon: {
                             url: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png"
                         }
@@ -213,9 +361,9 @@ try {
                     const infoWindow = new google.maps.InfoWindow({
                         content: `
                             <div style="padding: 10px;">
-                                <h3>${pet.NAME}</h3>
-                                <p>${pet.SPECIES}</p>
-                                <a href="pet-page.php?id=${pet.ID}" style="color: blue;">Vezi detalii</a>
+                                <h3>${otherPet.NAME}</h3>
+                                <p>${otherPet.SPECIES}</p>
+                                <a href="pet-page.php?id=${otherPet.ID}" style="color: blue;">Vezi detalii</a>
                             </div>
                         `
                     });
@@ -243,9 +391,19 @@ try {
                 marker.setVisible(initialZoom <= 12);
             });
         }
-
-        // Inițializăm harta când se încarcă pagina
-        window.onload = initMap;
+        
+        function showError(message) {
+            document.getElementById('loading-spinner').style.display = 'none';
+            const errorContainer = document.getElementById('error-container');
+            errorContainer.innerHTML = `<div class="error-message">${message}</div>`;
+            errorContainer.style.display = 'block';
+        }
+        
+        // Helper function to convert newlines to <br>
+        function nl2br(str) {
+            if (typeof str !== 'string') return '';
+            return str.replace(/(\r\n|\n\r|\r|\n)/g, '<br>');
+        }
     </script>
 </body>
 </html>

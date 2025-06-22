@@ -5,25 +5,9 @@ $user = checkAuth();
 session_start();
 require_once '../controllers/AdoptionFormController.php';
 
-$controller = new AdoptionFormController();
-$controller->index();
-
 $errors = [];
 $success = false;
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $errors = $controller->validateForm($_POST);
-    
-    if (empty($errors)) {
-        $pet_id = isset($_GET['pet_id']) ? (int)$_GET['pet_id'] : 0;
-        $result = $controller->processForm($_POST, $pet_id, $_SESSION['user_id']);
-        
-        if (isset($result['error'])) {
-            $errors[] = $result['error'];
-        } elseif (isset($result['success']) && $result['success']) {
-            $success = true;
-        }
-    }
-}
+$petId = isset($_GET['pet_id']) ? (int)$_GET['pet_id'] : 0;
 ?>
 
 <!DOCTYPE html>
@@ -35,36 +19,36 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <link rel="stylesheet" href="../stiluri/formular.css" />
     <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans&display=swap" rel="stylesheet">
 </head>
-<body>
-    <header class="navbar">
-        <div class="hamburger">
-            <span></span>
-            <span></span>
-            <span></span>
-        </div>
-        <div class="logo">Pow</div>
-        <a href="homepage.php" class="profile-icon">
+<body>    <header class="navbar">
+        <a href="javascript:history.back()" class="back-button">
+            <span class="back-arrow">←</span> Back
+        </a>
+        <a href="homepage.php" class="logo-link">
+            <div class="logo">Pow</div>
+        </a>
+        <a href="profile.php" class="profile-icon">
             <img src="../stiluri/imagini/profileicon.png" alt="Profile" />
         </a>
-    </header>
-
-    <section class="formular-banner">
+    </header>    <section class="formular-banner">
         <h1>PET ADOPTION FORM</h1>
-    </section>
-
-    <?php if (!empty($errors)): ?>
-        <div class="error-messages">
-            <?php foreach ($errors as $error): ?>
-                <p class="error"><?php echo htmlspecialchars($error); ?></p>
-            <?php endforeach; ?>
+    </section>    <div id="form-messages" class="error-messages" style="display: none;"></div>
+    <div id="success-message" class="success-message" style="display: none;">
+        Submitted with success!
+    </div>
+    <div id="no-form-message" class="error-messages" style="display: none;">
+        <p class="error">You have already submitted an adoption request for this pet.</p>
+        <div class="return-link">
+            <a href="pet-page.php?id=<?php echo htmlspecialchars($petId); ?>" class="back-btn">Return to pet page</a>
         </div>
-    <?php endif; ?>
+    </div>
 
+    <div id="form-container">
+        <!-- Form will be shown or hidden via JavaScript -->
     <section class="section-title">
         <h1>New Owner Information</h1>
     </section>
 
-    <form class="adoption-form" method="POST" action="<?php echo $_SERVER['PHP_SELF'] . '?pet_id=' . (isset($_GET['pet_id']) ? $_GET['pet_id'] : ''); ?>">
+    <form id="adoption-form" class="adoption-form">
         <div class="form-group two-col">
             <label>First Name
                 <input type="text" name="first_name" value="<?php echo isset($_POST['first_name']) ? htmlspecialchars($_POST['first_name']) : ''; ?>" />
@@ -215,10 +199,100 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             </ul>
         </section>
 
-        <button type="submit" class="submit-btn">Submit</button>
-        <?php if ($success): ?>
+        <button type="submit" class="submit-btn">Submit</button>        <?php if ($success): ?>
             <div class="success-message" style="margin-top: 20px; color: green; font-weight: bold; text-align: center;">Submitted with success!</div>
-        <?php endif; ?>
-    </form>
+        <?php endif; ?>    </form>
+    
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+    
+        const form = document.querySelector('form');
+        
+        // Verificăm dacă utilizatorul a trimis deja un formular pentru acest animal
+        const petId = <?php echo $petId; ?>;
+        
+        // Adăugăm event listener pentru trimiterea formularului
+        form.addEventListener('submit', function(e) {
+            e.preventDefault(); // Prevenim trimiterea normală a formularului
+            
+            // Creăm un FormData object pentru a colecta datele din formular
+            const formData = new FormData(form);
+            formData.append('action', 'submit');
+            formData.append('pet_id', petId);
+            
+            // Afișăm un indicator de încărcare
+            const submitBtn = form.querySelector('.submit-btn');
+            const originalText = submitBtn.textContent;
+            submitBtn.textContent = 'Submitting...';
+            submitBtn.disabled = true;            // Trimitem formularul prin AJAX
+            fetch(`../public/api.php?type=adoption&action=submit&pet_id=${petId}`, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Resetăm butonul
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+                
+                if (data.success) {
+                    // Afișăm mesajul de succes
+                    const successDiv = document.createElement('div');
+                    successDiv.className = 'success-message';
+                    successDiv.style.cssText = 'margin-top: 20px; color: green; font-weight: bold; text-align: center;';
+                    successDiv.textContent = 'Submitted with success!';
+                    
+                    // Adăugăm mesajul după butonul de trimitere
+                    submitBtn.parentNode.insertBefore(successDiv, submitBtn.nextSibling);
+                    
+                    // Facem scroll la mesaj
+                    successDiv.scrollIntoView({ behavior: 'smooth' });
+                    
+                    // Dezactivăm formularul
+                    const inputs = form.querySelectorAll('input, textarea, select, button');
+                    inputs.forEach(input => {
+                        input.disabled = true;
+                    });
+                    
+                    // Redirecționăm utilizatorul după 3 secunde
+                    setTimeout(() => {
+                        window.location.href = 'adoption-status.php';
+                    }, 3000);
+                } else {
+                    // Afișăm erorile
+                    let errorMessage = data.message || 'An error occurred while submitting the form.';
+                    
+                    if (data.errors && Array.isArray(data.errors)) {
+                        errorMessage = data.errors.join('<br>');
+                    }
+                    
+                    // Creăm sau actualizăm container-ul pentru erori
+                    let errorDiv = document.querySelector('.error-messages');
+                    if (!errorDiv) {
+                        errorDiv = document.createElement('div');
+                        errorDiv.className = 'error-messages';
+                        form.parentNode.insertBefore(errorDiv, form);
+                    }
+                    
+                    errorDiv.innerHTML = `<p class="error">${errorMessage}</p>`;
+                    errorDiv.scrollIntoView({ behavior: 'smooth' });
+                }
+            })
+            .catch(error => {
+                // Resetăm butonul
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+                
+                // Afișăm eroarea
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'error-messages';
+                errorDiv.innerHTML = '<p class="error">An error occurred while connecting to the server. Please try again later.</p>';
+                form.parentNode.insertBefore(errorDiv, form);
+                
+                console.error('Error:', error);
+            });
+        });
+    });
+    </script>
 </body>
-</html> 
+</html>

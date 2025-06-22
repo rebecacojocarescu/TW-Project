@@ -72,6 +72,9 @@ class AdoptionForm {
             return true;
 
         } catch (Exception $e) {
+            if (isset($stmt)) {
+                oci_rollback($this->conn);
+            }
             throw new Exception("Error submitting form: " . $e->getMessage());
         } finally {
             if (isset($stmt)) {
@@ -82,8 +85,6 @@ class AdoptionForm {
 
     public function updateStatus($formId, $status) {
         try {
-            oci_commit($this->conn);
-            
             $query = "UPDATE adoption_form SET status = :status WHERE id = :form_id";
             $stmt = oci_parse($this->conn, $query);
             
@@ -126,19 +127,48 @@ class AdoptionForm {
         }
     }
 
+    public function hasExistingSubmission($userId, $petId) {
+        try {
+            $query = "SELECT COUNT(*) AS count FROM adoption_form WHERE user_id = :user_id AND pet_id = :pet_id";
+            $stmt = oci_parse($this->conn, $query);
+            
+            oci_bind_by_name($stmt, ":user_id", $userId);
+            oci_bind_by_name($stmt, ":pet_id", $petId);
+            
+            if (!oci_execute($stmt)) {
+                $e = oci_error($stmt);
+                throw new Exception($e['message']);
+            }
+            
+            $row = oci_fetch_assoc($stmt);
+            return ($row && $row['COUNT'] > 0);
+            
+        } catch (Exception $e) {
+            error_log("Error checking existing submission: " . $e->getMessage());
+            throw $e;
+        } finally {
+            if (isset($stmt)) {
+                oci_free_statement($stmt);
+            }
+        }
+    }
+
     public function getAdopterDetails($formId) {
         try {
-            $query = "SELECT email, first_name, last_name, pet_name_desired FROM adoption_form WHERE id = :form_id";
+            $query = "SELECT email as EMAIL, first_name as FIRST_NAME, last_name as LAST_NAME, pet_name_desired as PET_NAME_DESIRED FROM adoption_form WHERE id = :form_id";
             $stmt = oci_parse($this->conn, $query);
+            
             oci_bind_by_name($stmt, ":form_id", $formId);
-            oci_execute($stmt);
-            $row = oci_fetch_assoc($stmt);
-            if ($row) {
-                return $row;
-            } else {
-                return null;
+            
+            if (!oci_execute($stmt)) {
+                throw new Exception(oci_error($stmt)['message']);
             }
+            
+            $row = oci_fetch_assoc($stmt);
+            return $row ?: null;
+            
         } catch (Exception $e) {
+            error_log("Error getting adopter details: " . $e->getMessage());
             return null;
         } finally {
             if (isset($stmt)) {
@@ -152,4 +182,4 @@ class AdoptionForm {
             oci_close($this->conn);
         }
     }
-} 
+}

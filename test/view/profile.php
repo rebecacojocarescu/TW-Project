@@ -47,9 +47,7 @@ if (isset($userData['error'])) {
 
     <div class="title-bar">
         <h2>YOUR PROFILE</h2>
-    </div>
-
-    <div class="profile-container">
+    </div>    <div class="profile-container">
         <img src="../stiluri/imagini/profileicon.png" alt="Profile Icon" class="profile-icon">
         
         <?php if ($message): ?>
@@ -58,8 +56,7 @@ if (isset($userData['error'])) {
             </div>
         <?php endif; ?>
 
-        <form method="POST" action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>">
-            <div class="form-group">
+        <form method="POST" action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>">            <div class="form-group">
                 <input type="text" name="name" placeholder="name" 
                        value="<?php echo htmlspecialchars($user['NAME'] ?? ''); ?>" required>
             </div>
@@ -73,12 +70,6 @@ if (isset($userData['error'])) {
                 <input type="email" name="email" placeholder="email adress" 
                        value="<?php echo htmlspecialchars($user['EMAIL'] ?? ''); ?>" required>
             </div>
-
-            <div class="form-group">
-                <input type="text" name="location" placeholder="location" 
-                       value="<?php echo htmlspecialchars($user['LOCATION'] ?? ''); ?>">
-            </div>
-
             <div class="form-group">
                 <input type="password" name="current_password" placeholder="current password">
             </div>
@@ -94,9 +85,7 @@ if (isset($userData['error'])) {
             <a href="my-pets.php" class="my-pets-btn">My Posted Pets</a>
             <a href="logout.php" class="logout-btn">Logout</a>
         </div>
-    </div>
-
-    <div class="adopted-pets">
+    </div>    <div class="adopted-pets">
         <h2>ADOPTED PETS</h2>
         <?php if (!empty($adoptedPets)): ?>
             <div class="pet-circles">
@@ -117,6 +106,80 @@ if (isset($userData['error'])) {
         <?php else: ?>
             <p>No pets adopted yet.</p>
         <?php endif; ?>
-    </div>
+    </div>    <style>
+        .error {
+            color: #d9534f;
+            background-color: #f9f2f2;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .success {
+            color: #5cb85c;
+            background-color: #f2f9f2;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }        .profile-actions {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+            gap: 20px;
+        }        .my-pets-btn {
+            padding: 10px 20px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            text-align: center;
+            width: 140px;
+            display: inline-block;
+        }        .logout-btn {
+            padding: 8px 16px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            text-align: center;
+            width: auto;
+            min-width: 140px;
+            display: inline-block;
+        }
+        .my-pets-btn {
+            background-color: #4CAF50;
+            color: white;
+            border: 2px solid #4CAF50;
+        }        .my-pets-btn:hover {
+            background-color: #45a049;
+            transform: translateY(-2px);
+        }
+        .save-button {
+            padding: 10px 20px;
+            border-radius: 25px;
+            background-color: #3498db;
+            color: white;
+            border: 2px solid #3498db;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-top: 10px;
+        }
+        .save-button:hover {
+            background-color: #2980b9;
+            transform: translateY(-2px);
+        }
+        .logout-btn {
+            background-color: #ff4444;
+            color: white;
+            border: 2px solid #ff4444;
+        }
+        .logout-btn:hover {
+            background-color: #cc0000;
+            transform: translateY(-2px);
+        }
+    </style>
 </body>
-</html> 
+</html>
+</body>
+</html>

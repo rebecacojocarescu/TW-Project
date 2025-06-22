@@ -240,142 +240,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         #map:hover {
             border-color: #f16a16;
-        }        /* Make sure the map controls are clickable */
+        }
+
+        /* Make sure the map controls are clickable */
         .gm-style .gm-style-iw {
             z-index: 1000;
         }
-
-        /* Image preview container */
-        .image-preview-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-top: 15px;
-        }
-
-        .image-preview {
-            position: relative;
-            width: 150px;
-            height: 150px;
-            border-radius: 8px;
-            border: 2px solid #ddd;
-            overflow: hidden;
-        }
-
-        .image-preview img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .remove-image {
-            position: absolute;
-            top: 5px;
-            right: 5px;
-            background-color: rgba(255, 255, 255, 0.7);
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            font-weight: bold;
-            color: #ff0000;
-            border: none;
-        }
-
-        .remove-image:hover {
-            background-color: rgba(255, 255, 255, 0.9);
-        }
-    </style>    <script>
-        // Image preview functionality
-        document.addEventListener('DOMContentLoaded', function() {
-            const input = document.getElementById('pet_images');
-            const previewContainer = document.getElementById('image-preview-container');
-            let selectedFiles = []; // Array to keep track of selected files
-            
-            // Clear preview container when the page loads
-            previewContainer.innerHTML = '';
-            
-            input.addEventListener('change', function() {
-                // Process the selected files
-                const newFiles = Array.from(this.files);
-                
-                // Store the selected files
-                newFiles.forEach(file => {
-                    selectedFiles.push(file);
-                    
-                    // Create image preview
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        const previewDiv = document.createElement('div');
-                        previewDiv.className = 'image-preview';
-                        previewDiv.dataset.fileName = file.name;
-                        
-                        const img = document.createElement('img');
-                        img.src = e.target.result;
-                        
-                        const removeBtn = document.createElement('button');
-                        removeBtn.type = 'button'; // Important to prevent form submission
-                        removeBtn.className = 'remove-image';
-                        removeBtn.textContent = '×';
-                        removeBtn.addEventListener('click', function() {
-                            // Remove from preview
-                            previewContainer.removeChild(previewDiv);
-                            
-                            // Remove from our array of selected files
-                            selectedFiles = selectedFiles.filter(f => f.name !== file.name);
-                            
-                            // Update hidden input field for actual form submission
-                            updateFormFiles();
-                        });
-                        
-                        previewDiv.appendChild(img);
-                        previewDiv.appendChild(removeBtn);
-                        previewContainer.appendChild(previewDiv);
-                    };
-                    reader.readAsDataURL(file);
-                });
-                
-                // Update the form files for submission
-                updateFormFiles();
-                
-                // Clear the input value so the same file can be selected again if needed
-                this.value = '';
-            });
-            
-            // Function to sync our selected files with the actual form input
-            function updateFormFiles() {
-                if (selectedFiles.length === 0) {
-                    // No files selected, just clear the input
-                    input.value = '';
-                    return;
-                }
-                
-                // Create a new DataTransfer object
-                const dataTransfer = new DataTransfer();
-                
-                // Add all currently selected files
-                selectedFiles.forEach(file => {
-                    dataTransfer.items.add(file);
-                });
-                
-                // Set the input's files to our DataTransfer object
-                input.files = dataTransfer.files;
-            }
-            
-            // Handle form submission
-            const form = document.querySelector('.post-pet-form');
-            form.addEventListener('submit', function(e) {
-                // Make sure we have the latest files in the form input
-                updateFormFiles();
-                
-                // Log the number of files being submitted
-                console.log(`Submitting ${input.files.length} files`);
-            });
-        });
-    </script>
+    </style>
 </head>
 <body>
     <a href="homepage.php" class="back-button">
@@ -537,14 +408,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div id="map" style="height: 400px; width: 100%; margin-bottom: 20px; border-radius: 10px;"></div>
                     <input type="hidden" id="latitude" name="latitude">
                     <input type="hidden" id="longitude" name="longitude">
-                </div>                <div class="form-group">
+                </div>
+
+                <div class="form-group">
                     <label for="pet_images">Pet Photos:</label>
                     <div class="file-input-container">
                         <input type="file" id="pet_images" name="pet_images[]" accept="image/*" multiple>
                         <label for="pet_images" class="custom-file-input">Choose Files</label>
                         <small>You can select multiple images</small>
                     </div>
-                    <div id="image-preview-container" class="image-preview-container"></div>
                 </div>
             </div>
 

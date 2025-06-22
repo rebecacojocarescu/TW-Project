@@ -4,12 +4,12 @@ use \Firebase\JWT\JWT;
 use \Firebase\JWT\Key;
 
 class JWTManager {
-    private static $key = "your-secret-key-here"; // În producție, folosește o cheie sigură și stochează-o în variabile de mediu
+    private static $key = "your-secret-key-here";
     private static $algorithm = 'HS256';
 
     public static function generateToken($userData) {
         $issuedAt = time();
-        $expirationTime = $issuedAt + 3600; // Token valid pentru 1 oră
+        $expirationTime = $issuedAt + 3600;
 
         $payload = array(
             "iat" => $issuedAt,

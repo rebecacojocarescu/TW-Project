@@ -2,14 +2,23 @@
 class ImageHandler {
     private $conn;
     private $uploadPath = '../uploads/';
-    private $allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+    private $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/jpg'];
     private $maxFileSize = 5242880; // 5MB
     
     public function __construct($db) {
         $this->conn = $db;
         
         if (!file_exists($this->uploadPath)) {
-            mkdir($this->uploadPath, 0777, true);
+            if (!mkdir($this->uploadPath, 0777, true)) {
+                error_log("Failed to create upload directory: " . $this->uploadPath);
+            }
+        }
+        
+        $petPath = $this->uploadPath . 'pets/';
+        if (!file_exists($petPath)) {
+            if (!mkdir($petPath, 0777, true)) {
+                error_log("Failed to create pets upload directory: " . $petPath);
+            }
         }
     }
     
@@ -17,12 +26,15 @@ class ImageHandler {
         $uploadedFiles = [];
         $errors = [];
         
-        // Verificăm dacă există fișiere
+        error_log("Starting uploadPetImages for pet_id: " . $pet_id);
+        
         if (!isset($files['name']) || empty($files['name'][0])) {
+            error_log("No files provided in upload");
             return ['success' => false, 'errors' => ['No files uploaded']];
         }
         
-        // Procesăm fiecare fișier
+        error_log("Processing " . count($files['name']) . " files");
+        
         for ($i = 0; $i < count($files['name']); $i++) {
             $fileName = $files['name'][$i];
             $fileType = $files['type'][$i];
@@ -30,62 +42,100 @@ class ImageHandler {
             $fileError = $files['error'][$i];
             $fileSize = $files['size'][$i];
             
+            error_log("Processing file: " . $fileName . ", type: " . $fileType . ", size: " . $fileSize);
+            
             // Verificări de bază
             if ($fileError !== UPLOAD_ERR_OK) {
-                $errors[] = "Upload error for file: $fileName";
+                $errors[] = "Upload error for file: $fileName (Error code: $fileError)";
+                error_log("File upload error for $fileName: Error code $fileError");
                 continue;
             }
             
             if (!in_array($fileType, $this->allowedTypes)) {
-                $errors[] = "Invalid file type for: $fileName";
+                $errors[] = "Invalid file type for: $fileName (Type: $fileType)";
+                error_log("Invalid file type for $fileName: $fileType");
                 continue;
             }
             
             if ($fileSize > $this->maxFileSize) {
-                $errors[] = "File too large: $fileName";
+                $errors[] = "File too large: $fileName ($fileSize bytes)";
+                error_log("File too large: $fileName ($fileSize bytes)");
                 continue;
             }
             
             // Generăm un nume unic pentru fișier
             $fileExtension = pathinfo($fileName, PATHINFO_EXTENSION);
-            $newFileName = uniqid('pet_' . $pet_id . '_') . '.' . $fileExtension;
-            $targetPath = $this->uploadPath . $newFileName;
+            $newFileName = 'pet_' . $pet_id . '_' . uniqid() . '.' . $fileExtension;
+            $targetPath = $this->uploadPath . 'pets/' . $newFileName;
+            
+            error_log("Target path for file: " . $targetPath);
             
             // Încercăm să mutăm fișierul
             if (move_uploaded_file($fileTmpName, $targetPath)) {
+                error_log("File moved successfully to: " . $targetPath);
+                
                 // Salvăm informațiile în baza de date
-                $relativePath = 'uploads/' . $newFileName;
+                $relativePath = 'uploads/pets/' . $newFileName;
                 $mediaType = 'photo'; // Setăm tipul corect pentru baza de date
                 
                 $query = "INSERT INTO media (pet_id, url, type) VALUES (:pet_id, :url, :type)";
                 $stmt = oci_parse($this->conn, $query);
                 
                 if ($stmt) {
+                    error_log("Successfully parsed media insert query");
+                    
                     oci_bind_by_name($stmt, ":pet_id", $pet_id);
                     oci_bind_by_name($stmt, ":url", $relativePath);
                     oci_bind_by_name($stmt, ":type", $mediaType);
                     
                     if (oci_execute($stmt)) {
+                        error_log("Successfully executed media insert query");
                         $uploadedFiles[] = $relativePath;
                     } else {
                         $e = oci_error($stmt);
-                        $errors[] = "Database error for file: $fileName - " . $e['message'];
+                        $errorMsg = "Database error for file: $fileName - " . $e['message'];
+                        $errors[] = $errorMsg;
+                        error_log($errorMsg);
+                        
                         // În caz de eroare, ștergem fișierul uploadat
-                        unlink($targetPath);
+                        if (file_exists($targetPath)) {
+                            if (unlink($targetPath)) {
+                                error_log("Deleted file due to database error: " . $targetPath);
+                            } else {
+                                error_log("Failed to delete file after database error: " . $targetPath);
+                            }
+                        }
                     }
                     
                     oci_free_statement($stmt);
                 } else {
-                    $errors[] = "Database error for file: $fileName";
-                    unlink($targetPath);
+                    $e = oci_error($this->conn);
+                    $errorMsg = "Database parse error for file: $fileName - " . $e['message'];
+                    $errors[] = $errorMsg;
+                    error_log($errorMsg);
+                    
+                    if (file_exists($targetPath)) {
+                        if (unlink($targetPath)) {
+                            error_log("Deleted file due to parse error: " . $targetPath);
+                        } else {
+                            error_log("Failed to delete file after parse error: " . $targetPath);
+                        }
+                    }
                 }
             } else {
-                $errors[] = "Could not move file: $fileName";
+                $errorMsg = "Could not move file: $fileName to $targetPath";
+                $errors[] = $errorMsg;
+                error_log($errorMsg);
             }
         }
         
+        $success = !empty($uploadedFiles);
+        error_log("Upload complete. Success: " . ($success ? "true" : "false") . 
+                 ", Files uploaded: " . count($uploadedFiles) . 
+                 ", Errors: " . count($errors));
+        
         return [
-            'success' => !empty($uploadedFiles),
+            'success' => $success,
             'files' => $uploadedFiles,
             'errors' => $errors
         ];
@@ -162,4 +212,4 @@ class ImageHandler {
         oci_free_statement($stmt);
         return $images;
     }
-} 
+}
