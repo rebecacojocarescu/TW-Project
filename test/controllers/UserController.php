@@ -53,47 +53,39 @@ class UserController {
         } catch (Exception $e) {
             return ['error' => $e->getMessage()];
         }
-    }
+    }    public function register($data) {
+        $errors = [];
+        
+        if (empty($data['name'])) {
+            $errors[] = "Name is required";
+        }
+        if (empty($data['surname'])) {
+            $errors[] = "Surname is required";
+        }
+        if (empty($data['email'])) {
+            $errors[] = "Email is required";
+        } elseif (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
+            $errors[] = "Invalid email format";
+        }
+        if (empty($data['password'])) {
+            $errors[] = "Password is required";
+        }
+        if (empty($data['confirm_password'])) {
+            $errors[] = "Password confirmation is required";
+        }
+        if (!empty($data['password']) && !empty($data['confirm_password']) && 
+            $data['password'] !== $data['confirm_password']) {
+            $errors[] = "Passwords do not match";
+        }
+        
+        if (!empty($errors)) {
+            return [
+                'success' => false,
+                'errors' => $errors
+            ];
+        }
 
-    public function register($data) {
         try {
-            $errors = [];
-            
-            if (empty($data['name'])) {
-                $errors[] = "Name is required";
-            }
-            if (empty($data['surname'])) {
-                $errors[] = "Surname is required";
-            }
-            if (empty($data['email'])) {
-                $errors[] = "Email is required";
-            } elseif (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
-                $errors[] = "Invalid email format";
-            }
-            if (empty($data['password'])) {
-                $errors[] = "Password is required";
-            }
-            if (empty($data['confirm_password'])) {
-                $errors[] = "Password confirmation is required";
-            }
-            if ($data['password'] !== $data['confirm_password']) {
-                $errors[] = "Passwords do not match";
-            }
-            
-            if (!empty($errors)) {
-                return [
-                    'success' => false,
-                    'errors' => $errors
-                ];
-            }
-            
-            if ($this->userModel->emailExists($data['email'])) {
-                return [
-                    'success' => false,
-                    'errors' => ['Email already exists']
-                ];
-            }
-            
             $result = $this->userModel->createUser(
                 $data['name'],
                 $data['surname'],
@@ -101,22 +93,24 @@ class UserController {
                 $data['password']
             );
             
-            if ($result) {
-                return [
-                    'success' => true,
-                    'message' => 'Registration successful'
-                ];
-            } else {
+            return [
+                'success' => true,
+                'message' => 'Registration successful'
+            ];
+            
+        } catch (Exception $e) {
+            $message = $e->getMessage();
+            if (strpos($message, "email address is already registered") !== false) {
                 return [
                     'success' => false,
-                    'errors' => ['Failed to create account']
+                    'errors' => ['This email address is already registered']
                 ];
             }
             
-        } catch (Exception $e) {
+            error_log("Registration error: " . $e->getMessage());
             return [
                 'success' => false,
-                'errors' => [$e->getMessage()]
+                'errors' => ['Could not complete registration. Please try again.']
             ];
         }
     }

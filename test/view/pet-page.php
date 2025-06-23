@@ -399,7 +399,6 @@ $pet_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
             errorContainer.style.display = 'block';
         }
         
-        // Helper function to convert newlines to <br>
         function nl2br(str) {
             if (typeof str !== 'string') return '';
             return str.replace(/(\r\n|\n\r|\r|\n)/g, '<br>');

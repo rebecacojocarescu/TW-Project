@@ -110,7 +110,6 @@ class PetController {
             $data['spayed_neutered'] = isset($data['spayed_neutered']) ? 1 : 0;
             $data['flea_treatment'] = isset($data['flea_treatment']) ? 1 : 0;
 
-            // Convert coordinates to float
             $data['latitude'] = floatval($data['latitude']);
             $data['longitude'] = floatval($data['longitude']);
 

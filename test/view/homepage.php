@@ -3,7 +3,6 @@ session_start();
 require_once '../utils/auth_middleware.php';
 $user = checkAuth();
 
-// Set session variables from user object if needed
 $_SESSION['user_id'] = $user->id;
 $_SESSION['is_admin'] = $user->is_admin ?? false;
 ?>

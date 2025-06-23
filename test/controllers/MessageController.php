@@ -60,7 +60,6 @@ class MessageController {
             
             $messages = $this->messageModel->getMessages($conversationId);
             
-            // Mark messages as read
             $userId = $_SESSION['user_id'] ?? null;
             if ($userId) {
                 $this->messageModel->markAsRead($conversationId, $userId);

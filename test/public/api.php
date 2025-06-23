@@ -96,10 +96,24 @@ switch ($type) {
         break;
         
     case 'user':
-        require_once dirname(__DIR__) . '/controllers/UserApiController.php';
-        $controller = new UserApiController();
+        require_once dirname(__DIR__) . '/controllers/UserController.php';
+        $controller = new UserController();
         
         switch ($action) {
+            case 'register':
+                $data = json_decode(file_get_contents('php://input'), true) ?? [];
+                $result = $controller->register($data);
+                
+                if ($result['success']) {
+                    http_response_code(200);
+                } else {
+                    http_response_code(400);
+                }
+                
+                echo json_encode($result);
+                exit;
+                break;
+
             case 'get_profile':
                 $userId = $_GET['id'] ?? null;
                 $controller->getUserProfile($userId);
@@ -142,26 +156,45 @@ switch ($type) {
             default:
                 sendErrorResponse('Invalid action specified for notifications API');
         }
-        break;
-          case 'adoption_form':
+        break;          case 'adoption_form':
     case 'adoption':  // Support both for backward compatibility
         require_once dirname(__DIR__) . '/controllers/AdoptionFormController.php';
+        require_once dirname(__DIR__) . '/utils/auth_middleware.php';
+        
+        if (!isset($_SESSION['user_id'])) {
+            http_response_code(401);
+            echo json_encode([
+                'success' => false,
+                'errors' => ['Please log in to submit an adoption form']
+            ]);
+            exit;
+        }
+        
         $controller = new AdoptionFormController();
         
         switch ($action) {
             case 'submit':
+                $petId = isset($_GET['pet_id']) ? (int)$_GET['pet_id'] : 0;
+                
+                if (!$petId) {
+                    http_response_code(400);
+                    echo json_encode([
+                        'success' => false,
+                        'errors' => ['Invalid pet ID']
+                    ]);
+                    exit;
+                }
+                
                 $errors = $controller->validateForm($_POST);
                 
                 if (empty($errors)) {
-                    $petId = isset($_GET['pet_id']) ? (int)$_GET['pet_id'] : 0;
                     $result = $controller->processForm($_POST, $petId, $_SESSION['user_id']);
                     
-                    header('Content-Type: application/json');
                     if (isset($result['error'])) {
                         http_response_code(400);
                         echo json_encode([
                             'success' => false,
-                            'message' => $result['error']
+                            'errors' => [$result['error']]
                         ]);
                     } else {
                         echo json_encode([
@@ -170,11 +203,10 @@ switch ($type) {
                         ]);
                     }
                 } else {
-                    header('Content-Type: application/json');
                     http_response_code(400);
                     echo json_encode([
                         'success' => false,
-                        'message' => implode(", ", $errors)
+                        'errors' => $errors
                     ]);
                 }
                 exit;

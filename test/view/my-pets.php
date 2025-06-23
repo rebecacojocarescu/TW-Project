@@ -180,7 +180,6 @@ if (!isset($_SESSION['user_id'])) {
             fetchUserPets();
         });
         
-        // Fetch user pets from API
         async function fetchUserPets() {
             const container = document.getElementById('pets-container');
             const loading = document.getElementById('loading');
@@ -196,17 +195,13 @@ if (!isset($_SESSION['user_id'])) {
                 const data = await response.json();
                 
                 if (data.success) {
-                    // Hide loading spinner
                     loading.style.display = 'none';
                     
-                    // Check if there are pets to display
                     if (data.pets && data.pets.length > 0) {
-                        // Create HTML for each pet
                         data.pets.forEach(pet => {
                             const petCard = document.createElement('div');
                             petCard.className = 'pet-card';
                             
-                            // Create image element
                             if (pet.IMAGE) {
                                 const img = document.createElement('img');
                                 img.src = pet.IMAGE;
@@ -229,7 +224,6 @@ if (!isset($_SESSION['user_id'])) {
                                 petCard.appendChild(imgPlaceholder);
                             }
                             
-                            // Create pet info section
                             const infoDiv = document.createElement('div');
                             infoDiv.className = 'pet-info';
                             
@@ -262,12 +256,10 @@ if (!isset($_SESSION['user_id'])) {
                 errorDiv.className = 'error-message';
                 let errorMessage = error.message;
                 
-                // Try to parse error message if it's JSON
                 try {
                     const errorData = JSON.parse(error.message);
                     errorMessage = errorData.message || errorMessage;
                 } catch (e) {
-                    // Not JSON, use as is
                 }
                 
                 errorDiv.textContent = 'Failed to load pets: ' + errorMessage;
@@ -275,7 +267,6 @@ if (!isset($_SESSION['user_id'])) {
             }
         }
         
-        // Delete pet function
         function deletePet(petId) {
             if (confirm('Are you sure you want to delete this pet?')) {
                 fetch(`../public/api.php?type=pets&action=delete_pet&id=${petId}`, {
@@ -295,7 +286,6 @@ if (!isset($_SESSION['user_id'])) {
                 })
                 .then(data => {
                     if (data.success) {
-                        // Refresh the page to show updated list
                         window.location.reload();
                     } else {
                         throw new Error(data.message || 'Unknown error occurred');

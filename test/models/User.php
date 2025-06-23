@@ -49,9 +49,13 @@ class User {
 
         return $user;
     }
-    
-    public function createUser($name, $surname, $email, $password) {
+      public function createUser($name, $surname, $email, $password) {
+        $stmt = null;
         try {
+            if ($this->emailExists($email)) {
+                throw new Exception("This email address is already registered");
+            }
+
             $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
             
             $query = "INSERT INTO users (name, surname, email, password) VALUES (:name, :surname, :email, :password)";
@@ -59,8 +63,7 @@ class User {
             
             if (!$stmt) {
                 $error = oci_error($this->conn);
-
-                throw new Exception("Database error while creating user");
+                throw new Exception("Could not process registration request");
             }
             
             oci_bind_by_name($stmt, ":name", $name);
@@ -69,23 +72,27 @@ class User {
             oci_bind_by_name($stmt, ":password", $hashedPassword);
             
             $execute = oci_execute($stmt);
-            
             if (!$execute) {
                 $error = oci_error($stmt);
-
-                throw new Exception("Failed to create user: " . $error['message']);
+                if ($error['code'] == 1) {
+                    throw new Exception("This email address is already registered");
+                }
+                throw new Exception("Could not complete registration. Please try again.");
             }
             
             oci_commit($this->conn);
-            oci_free_statement($stmt);
-            
             return true;
         } catch (Exception $e) {
-            error_log("Error in createUser: " . $e->getMessage());
             if (isset($stmt)) {
+                oci_rollback($this->conn);
                 oci_free_statement($stmt);
             }
             throw $e;
+        }
+        finally {
+            if (isset($stmt)) {
+                oci_free_statement($stmt);
+            }
         }
     }
     
@@ -235,5 +242,22 @@ class User {
         oci_free_statement($stmt);
         
         return $pets;
+    }
+    
+    public function emailExists($email) {
+        $query = "SELECT COUNT(*) as count FROM users WHERE email = :email";
+        $stmt = oci_parse($this->conn, $query);
+        
+        if (!$stmt) {
+            throw new Exception("Database error while checking email");
+        }
+        
+        oci_bind_by_name($stmt, ":email", $email);
+        oci_execute($stmt);
+        
+        $row = oci_fetch_assoc($stmt);
+        oci_free_statement($stmt);
+        
+        return ($row['COUNT'] > 0);
     }
 }

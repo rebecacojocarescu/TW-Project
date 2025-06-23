@@ -36,11 +36,12 @@ class AdoptionFormController {
             error_log("Error in processForm: " . $e->getMessage());
             return ['error' => $e->getMessage()];
         }
-    }
+    }    public function validateForm($data) {
+        if (!is_array($data)) {
+            return ['Please provide valid form data'];
+        }
 
-    public function validateForm($data) {
         $errors = [];
-
         $requiredFields = [
             'first_name' => 'First Name',
             'last_name' => 'Last Name',
@@ -57,17 +58,20 @@ class AdoptionFormController {
         ];
 
         foreach ($requiredFields as $field => $label) {
-            if (empty($data[$field])) {
-                $errors[] = "$label is required";
+            if (!isset($data[$field]) || trim($data[$field]) === '') {
+                $errors[] = "Please provide your $label";
             }
         }
 
         if (!empty($data['email']) && !filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
-            $errors[] = "Invalid email format";
+            $errors[] = "Please provide a valid email address";
         }
 
-        if (!empty($data['phone']) && !preg_match("/^[0-9()+\- ]{7,20}$/", $data['phone'])) {
-            $errors[] = "Invalid phone number format";
+        if (!empty($data['phone'])) {
+            $phone = preg_replace('/[^0-9]/', '', $data['phone']);
+            if (strlen($phone) < 7 || strlen($phone) > 15) {
+                $errors[] = "Please provide a valid phone number";
+            }
         }
 
         return $errors;
@@ -117,7 +121,6 @@ class AdoptionFormController {
             $result = $this->model->updateStatus($formId, $status);
             
             if ($result) {
-                // Send email if approved
                 if ($status === 'approved') {
                     $adopter = $this->model->getAdopterDetails($formId);
                     if ($adopter && !empty($adopter['EMAIL'])) {

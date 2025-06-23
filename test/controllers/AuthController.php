@@ -8,25 +8,24 @@
     class AuthController {
         private function validateRegistration($data) {
             $errors = [];
-            
             if (empty($data['name']) || strlen($data['name']) < 2) {
-                $errors[] = "Numele trebuie să aibă cel puțin 2 caractere";
+                $errors[] = "Name must be at least 2 characters long";
             }
             
             if (empty($data['surname']) || strlen($data['surname']) < 2) {
-                $errors[] = "Prenumele trebuie să aibă cel puțin 2 caractere";
+                $errors[] = "Surname must be at least 2 characters long";
             }
             
             if (empty($data['email']) || !filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
-                $errors[] = "Adresa de email nu este validă";
+                $errors[] = "Please enter a valid email address";
             }
             
             if (empty($data['password']) || strlen($data['password']) < 6) {
-                $errors[] = "Parola trebuie să aibă cel puțin 6 caractere";
+                $errors[] = "Password must be at least 6 characters long";
             }
             
             if ($data['password'] !== $data['confirm_password']) {
-                $errors[] = "Parolele nu coincid";
+                $errors[] = "Passwords do not match";
             }
             
             return $errors;
@@ -80,13 +79,20 @@
                             'success' => false, 
                             'errors' => ["Failed to create account. Please try again."]
                         ]);
-                    }
-                } catch (Exception $e) {
+                    }                } catch (Exception $e) {
                     error_log("Database error during registration: " . $e->getMessage());
-                    echo json_encode([
-                        'success' => false,
-                        'errors' => ["Database error. Please try again later."]
-                    ]);
+                    $errorMessage = $e->getMessage();
+                    if (strpos($errorMessage, "This email address is already registered") !== false) {
+                        echo json_encode([
+                            'success' => false,
+                            'errors' => ["This email address is already registered"]
+                        ]);
+                    } else {
+                        echo json_encode([
+                            'success' => false,
+                            'errors' => ["Database error. Please try again later."]
+                        ]);
+                    }
                 }
             } catch (Exception $e) {
                 error_log("Unexpected error during registration: " . $e->getMessage());

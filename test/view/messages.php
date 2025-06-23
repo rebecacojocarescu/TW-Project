@@ -5,14 +5,13 @@ $user = checkAuth();
 session_start();
 require_once '../controllers/MessageController.php';
 
-// Helper function to prevent deprecated warnings when using htmlspecialchars with null values
+
 function safeEcho($value, $default = '') {
     return htmlspecialchars($value ?? $default);
 }
 
 $controller = new MessageController();
 
-// Get pet_id and owner_id from URL if starting new conversation
 $petId = $_GET['pet_id'] ?? null;
 $ownerId = $_GET['owner_id'] ?? null;
 
@@ -25,11 +24,9 @@ if ($petId && $ownerId) {
     $pet = $result['pet'];
 }
 
-// Get all conversations for the current user
 $conversationsResult = $controller->getConversations();
 $conversations = $conversationsResult['conversations'] ?? [];
 
-// Get messages for selected conversation
 $selectedConversationId = $_GET['conversation_id'] ?? null;
 $messages = [];
 if ($selectedConversationId) {
@@ -138,7 +135,6 @@ if ($selectedConversationId) {
     </div>
 
     <script>
-        // Scroll to bottom of chat
         function scrollToBottom() {
             const chatMessages = document.getElementById('chat-messages');
             if (chatMessages) {
@@ -146,10 +142,8 @@ if ($selectedConversationId) {
             }
         }
 
-        // Call on page load
         scrollToBottom();
 
-        // Handle form submission
         document.getElementById('message-form')?.addEventListener('submit', async (e) => {
             e.preventDefault();
             const form = e.target;
@@ -164,10 +158,8 @@ if ($selectedConversationId) {
                 const result = await response.json();
                 
                 if (result.success) {
-                    // Clear the message input
                     form.querySelector('textarea').value = '';
                     
-                    // Reload the page to show the new message
                     window.location.reload();
                 } else {
                     alert(result.error || 'Failed to send message');

@@ -224,10 +224,15 @@ $petId = isset($_GET['pet_id']) ? (int)$_GET['pet_id'] : 0;
             const submitBtn = form.querySelector('.submit-btn');
             const originalText = submitBtn.textContent;
             submitBtn.textContent = 'Submitting...';
-            submitBtn.disabled = true;            // Trimitem formularul prin AJAX
+            submitBtn.disabled = true;            // Clear any existing error messages
+            const existingErrors = document.querySelectorAll('.error-messages');
+            existingErrors.forEach(err => err.remove());
+            
+            // Send form data using fetch
             fetch(`../public/api.php?type=adoption&action=submit&pet_id=${petId}`, {
                 method: 'POST',
-                body: formData
+                body: formData,
+                credentials: 'include' // This ensures cookies (session) are sent
             })
             .then(response => response.json())
             .then(data => {
@@ -258,15 +263,10 @@ $petId = isset($_GET['pet_id']) ? (int)$_GET['pet_id'] : 0;
                     setTimeout(() => {
                         window.location.href = 'adoption-status.php';
                     }, 3000);
-                } else {
-                    // Afișăm erorile
-                    let errorMessage = data.message || 'An error occurred while submitting the form.';
+                } else {                    // Display errors
+                    const errorMessages = data.errors || [data.message || 'An error occurred while submitting the form.'];
                     
-                    if (data.errors && Array.isArray(data.errors)) {
-                        errorMessage = data.errors.join('<br>');
-                    }
-                    
-                    // Creăm sau actualizăm container-ul pentru erori
+                    // Create or update error container
                     let errorDiv = document.querySelector('.error-messages');
                     if (!errorDiv) {
                         errorDiv = document.createElement('div');
@@ -274,7 +274,7 @@ $petId = isset($_GET['pet_id']) ? (int)$_GET['pet_id'] : 0;
                         form.parentNode.insertBefore(errorDiv, form);
                     }
                     
-                    errorDiv.innerHTML = `<p class="error">${errorMessage}</p>`;
+                    errorDiv.innerHTML = errorMessages.map(msg => `<p class="error">${msg}</p>`).join('');
                     errorDiv.scrollIntoView({ behavior: 'smooth' });
                 }
             })

@@ -5,9 +5,7 @@ require_once dirname(dirname(__FILE__)) . '/config/database.php';
 class NotificationController {
     private $conn;
     
-    /**
-     * Constructor
-     */
+
     public function __construct() {
         try {
             $this->conn = getConnection();
@@ -16,9 +14,7 @@ class NotificationController {
         }
     }
     
-    /**
-     * Destructor - make sure to close database connection
-     */
+
     public function __destruct() {
         if (isset($this->conn) && $this->conn) {
             oci_close($this->conn);

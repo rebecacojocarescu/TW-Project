@@ -1,18 +1,8 @@
 <?php
-require_once '../controllers/UserController.php';
 session_start();
 
 if (isset($_SESSION['user_id'])) {
     header('Location: homepage.php');
-    exit;
-}
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $controller = new UserController();
-    $result = $controller->register($_POST);
-    
-    header('Content-Type: application/json');
-    echo json_encode($result);
     exit;
 }
 ?>
@@ -82,13 +72,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         var submitBtn = document.getElementById('submitBtn');
         var formData = new FormData(form);
         
-        // Disable the button and show loading state
         submitBtn.classList.add('loading');
-        submitBtn.disabled = true;
-
-        fetch('../controllers/AuthController.php', {
+        submitBtn.disabled = true;        fetch('../public/api.php?type=user&action=register', {
           method: 'POST',
-          body: formData
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(Object.fromEntries(formData))
         })
         .then(response => {
           if (!response.ok) {
@@ -124,11 +114,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       document.getElementById('registerForm').addEventListener('submit', handleSubmit);
 
       document.querySelector('input[name="email"]').addEventListener('input', function(e) {
-        var email = e.target.value;
-        var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        var email = e.target.value;          var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         
         if (email && !emailRegex.test(email)) {
-          e.target.setCustomValidity('Introduceți o adresă de email validă');
+          e.target.setCustomValidity('Please enter a valid email address');
         } else {
           e.target.setCustomValidity('');
         }
@@ -139,7 +128,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         var confirmPassword = e.target.value;
         
         if (password !== confirmPassword) {
-          e.target.setCustomValidity('Parolele nu coincid');
+          e.target.setCustomValidity('Passwords do not match');
         } else {
           e.target.setCustomValidity('');
         }
