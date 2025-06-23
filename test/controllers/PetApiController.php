@@ -432,8 +432,7 @@ class PetApiController {
             return $this->sendJsonResponse(false, 'An error occurred while retrieving user pets');
         }
     }
-    
-    public function deletePet($petId = null) {
+      public function deletePet($petId = null) {
         try {
             if (!$this->conn) {
                 return $this->sendJsonResponse(false, 'Database connection error');
@@ -449,10 +448,21 @@ class PetApiController {
                 return $this->sendJsonResponse(false, 'Invalid or missing pet ID');
             }
             
-            session_start();
+            if (session_status() === PHP_SESSION_NONE) {
+                session_start();
+            }
             $userId = $_SESSION['user_id'] ?? null;
             if (!$userId) {
                 return $this->sendJsonResponse(false, 'User not authenticated');
+            }
+            
+            try {
+                $result = $this->petModel->deletePet($petId);
+                if ($result) {
+                    return $this->sendJsonResponse(true, 'Pet deleted successfully');
+                }
+            } catch (Exception $e) {
+                return $this->sendJsonResponse(false, $e->getMessage());
             }
             $query = "SELECT owner_id FROM pets WHERE id = :pet_id";
             $stmt = oci_parse($this->conn, $query);

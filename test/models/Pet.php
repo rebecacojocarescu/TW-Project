@@ -39,9 +39,7 @@ class Pet {
         oci_free_statement($stmt);
         
         return $pet;
-    }
-    
-    public function getPetMedia($pet_id) {
+    }    public function getPetMedia($pet_id) {
         $media_query = "SELECT * FROM media WHERE pet_id = :pet_id";
         $media_stmt = oci_parse($this->conn, $media_query);
         
@@ -64,7 +62,7 @@ class Pet {
         oci_free_statement($media_stmt);
         
         return $media;
-    }    public function createPet($data) {
+    }public function createPet($data) {
         try {            $query = "INSERT INTO pets (
                 name, species, breed, age, gender, health_status, description,
                 available_for_adoption, adoption_address, owner_id, personality_description,
@@ -120,260 +118,17 @@ class Pet {
             
             if (!$execute) {
                 $e = oci_error($stmt);                throw new Exception("Could not create pet: " . $e['message']);
-            }
-
-            oci_free_statement($stmt);
-              return $inserted_id;
+            }            oci_free_statement($stmt);
+            
+            return $inserted_id;
         } catch (Exception $e) {
+            error_log("Error in createPet: " . $e->getMessage());
             throw $e;
         }
-    }    private function beginTransaction() {
+    }private function beginTransaction() {
         $stmt = oci_parse($this->conn, "BEGIN NULL; END;");
         return oci_execute($stmt, OCI_NO_AUTO_COMMIT);
-    }
-    
-    private function saveImages($petId, $images) {
-        // Log PHP configuration
-        $this->logUploadConfiguration();
-        
-        // Define directories - simplify paths to avoid permission issues
-        $mainUploadDir = dirname(__DIR__) . '/uploads/';
-        $petsDir = $mainUploadDir . 'pets/'; 
-        $uploadDirectory = $petsDir . $petId . '/';
-        $fallbackDirectory = $mainUploadDir;
-        
-        // Debug the upload directory
-        
-        // Check uploads directory permissions
-        if (!file_exists($mainUploadDir)) {            if (!mkdir($mainUploadDir, 0777, true)) {                if (!mkdir($mainUploadDir, 0777, true)) {
-                    // Use fallback to direct uploads folder
-                    return $this->saveImagesToFallbackLocation($petId, $images);
-                }
-            }
-        }
-        
-        // Ensure uploads directory is writable - this is critical
-        if (!is_writable($mainUploadDir)) {            chmod($mainUploadDir, 0777);
-            if (!is_writable($mainUploadDir)) {
-                // Use fallback
-                return $this->saveImagesToFallbackLocation($petId, $images);
-            }
-        }
-        
-        // Ensure pets directory exists
-        if (!file_exists($petsDir)) {            if (!mkdir($petsDir, 0777, true)) {
-                // Use fallback
-                return $this->saveImagesToFallbackLocation($petId, $images);
-            }
-            chmod($petsDir, 0777); // Ensure it's writable
-        }
-        
-        // Create pet-specific directory
-        $useSubdirectory = true;
-        if (!file_exists($uploadDirectory)) {            if (!mkdir($uploadDirectory, 0777, true)) {
-                $useSubdirectory = false;
-            } else {
-                chmod($uploadDirectory, 0777); // Ensure it's writable
-                if (!is_writable($uploadDirectory)) {
-                    error_log("WARNING: New directory is not writable! Falling back.");
-                    $useSubdirectory = false;
-                }
-            }
-        }
-        
-        $uploadedFiles = [];
-        $errorMessages = [];
-          // Process each uploaded image
-        for ($i = 0; $i < count($images['name']); $i++) {
-            $currentFile = $images['name'][$i];
-            $errorCode = $images['error'][$i];
-            
-            error_log("Processing file {$i}: {$currentFile} - Error code: {$errorCode}");
-            
-            if ($errorCode === 0) {
-                // Generate a unique filename
-                $fileExtension = pathinfo($currentFile, PATHINFO_EXTENSION);
-                $fileName = uniqid() . '_' . preg_replace('/[^a-zA-Z0-9_.-]/', '', basename($currentFile));
-                
-                // Determine the upload path
-                if ($useSubdirectory) {
-                    $targetPath = $uploadDirectory . $fileName;
-                    $relativePath = 'uploads/pets/' . $petId . '/' . $fileName;
-                } else {
-                    // Use a fallback - put files directly in uploads with a pet ID prefix
-                    $fileName = 'pet_' . $petId . '_' . $fileName;
-                    $targetPath = $fallbackDirectory . $fileName;
-                    $relativePath = 'uploads/' . $fileName;
-                }
-                
-                $sourcePath = $images['tmp_name'][$i];
-                
-                error_log("Attempting to upload from {$sourcePath} to {$targetPath}");
-                
-                // Check if the source file exists and is a valid upload
-                if (!is_uploaded_file($sourcePath)) {
-                    $errorMessages[] = "Invalid upload or source file not found: {$sourcePath}";
-                    error_log("ERROR: Not a valid uploaded file: {$sourcePath}");
-                    continue;
-                }
-                  // Double-check that source exists
-                if (!file_exists($sourcePath)) {
-                    error_log("ERROR: Source file does not exist: {$sourcePath}");
-                    $errorMessages[] = "Source file does not exist: {$sourcePath}";
-                    continue;
-                }
-                
-                // Make sure target directory exists
-                $targetDir = dirname($targetPath);
-                if (!file_exists($targetDir)) {
-                    error_log("Creating target directory: {$targetDir}");
-                    if (!mkdir($targetDir, 0777, true)) {
-                        error_log("ERROR: Failed to create target directory: {$targetDir}");
-                    }
-                }
-                
-                if (move_uploaded_file($sourcePath, $targetPath)) {
-                    error_log("Successfully moved file to {$targetPath}");
-                    chmod($targetPath, 0644); // Ensure file is readable
-                    
-                    // Use the same relativePath that we determined above
-                    error_log("Using relative path for database: {$relativePath}");
-                    
-                    try {
-                        $query = "INSERT INTO media (pet_id, url, type) VALUES (:pet_id, :url, 'photo')";
-                        $stmt = oci_parse($this->conn, $query);
-                        
-                        if (!$stmt) {
-                            $error = oci_error($this->conn);
-                            throw new Exception("Failed to parse statement: " . $error['message']);
-                        }
-                        
-                        oci_bind_by_name($stmt, ":pet_id", $petId);
-                        oci_bind_by_name($stmt, ":url", $relativePath);
-                        
-                        $success = oci_execute($stmt, OCI_NO_AUTO_COMMIT);
-                        
-                        if (!$success) {
-                            $error = oci_error($stmt);
-                            throw new Exception("Failed to execute statement: " . $error['message']);
-                        }
-                        
-                        oci_free_statement($stmt);
-                        
-                        $uploadedFiles[] = $relativePath;
-                        error_log("Added file record to database: {$relativePath}");
-                    } catch (Exception $e) {
-                        $errorMessages[] = "Database error: " . $e->getMessage();
-                        error_log("Database error while saving image: " . $e->getMessage());
-                        
-                        // If we can't add to database, we should remove the file
-                        if (file_exists($targetPath)) {
-                            unlink($targetPath);
-                        }
-                    }
-                } else {
-                    $errorMessages[] = "Failed to move uploaded file to {$targetPath}";
-                    error_log("Failed to move uploaded file to {$targetPath}");
-                }
-            } else {
-                $errorMessages[] = "Upload error for file {$currentFile}: Error code {$errorCode}";
-                error_log("Upload error for file {$currentFile}: Error code {$errorCode}");
-            }
-        }
-        
-        if (!empty($errorMessages)) {
-            error_log("Image upload errors: " . implode(", ", $errorMessages));
-        }
-        
-        return $uploadedFiles;
-    }    private function saveImagesToFallbackLocation($petId, $images) {
-        $mainUploadDir = dirname(__DIR__) . '/uploads/';
-        $uploadedFiles = [];
-        $errorMessages = [];
-        
-        error_log("Using fallback location for images: " . $mainUploadDir);
-        
-        // Process each uploaded image
-        for ($i = 0; $i < count($images['name']); $i++) {
-            $currentFile = $images['name'][$i];
-            $errorCode = $images['error'][$i];
-            
-            error_log("Processing file {$i}: {$currentFile} - Error code: {$errorCode}");
-            
-            if ($errorCode === 0) {
-                // Generate a unique filename with pet ID prefix
-                $fileExtension = pathinfo($currentFile, PATHINFO_EXTENSION);
-                $fileName = 'pet_' . $petId . '_' . uniqid() . '.' . $fileExtension;
-                
-                // Direct path in uploads directory
-                $targetPath = $mainUploadDir . $fileName;
-                $relativePath = 'uploads/' . $fileName;
-                
-                $sourcePath = $images['tmp_name'][$i];
-                
-                error_log("Attempting to upload from {$sourcePath} to {$targetPath}");
-                
-                // Check if the source file exists and is a valid upload
-                if (!is_uploaded_file($sourcePath)) {
-                    $errorMessages[] = "Invalid upload or source file not found: {$sourcePath}";
-                    continue;
-                }
-                
-                if (move_uploaded_file($sourcePath, $targetPath)) {
-                    error_log("Successfully moved file to {$targetPath}");
-                    chmod($targetPath, 0644); // Ensure file is readable
-                    
-                    // Save in media table
-                    try {
-                        $query = "INSERT INTO media (pet_id, url, type) VALUES (:pet_id, :url, 'photo')";
-                        $stmt = oci_parse($this->conn, $query);
-                        
-                        if (!$stmt) {
-                            $error = oci_error($this->conn);
-                            throw new Exception("Failed to parse statement: " . $error['message']);
-                        }
-                        
-                        oci_bind_by_name($stmt, ":pet_id", $petId);
-                        oci_bind_by_name($stmt, ":url", $relativePath);
-                        
-                        $success = oci_execute($stmt, OCI_NO_AUTO_COMMIT);
-                        
-                        if (!$success) {
-                            $error = oci_error($stmt);
-                            throw new Exception("Failed to execute statement: " . $error['message']);
-                        }
-                        
-                        oci_free_statement($stmt);
-                        
-                        $uploadedFiles[] = $relativePath;
-                        error_log("Added file record to database: {$relativePath}");
-                    } catch (Exception $e) {
-                        $errorMessages[] = "Database error: " . $e->getMessage();
-                        error_log("Database error while saving image: " . $e->getMessage());
-                        
-                        // If we can't add to database, remove the file
-                        if (file_exists($targetPath)) {
-                            unlink($targetPath);
-                        }
-                    }
-                } else {
-                    $error = error_get_last();
-                    $errorMessages[] = "Failed to move uploaded file to {$targetPath}. Error: " . ($error ? $error['message'] : 'Unknown');
-                    error_log("Failed to move uploaded file to {$targetPath}. Error: " . ($error ? $error['message'] : 'Unknown'));
-                }
-            } else {
-                $errorMessages[] = "Upload error for file {$currentFile}: Error code {$errorCode}";
-                error_log("Upload error for file {$currentFile}: Error code {$errorCode}");
-            }
-        }
-        
-        if (!empty($errorMessages)) {
-            error_log("Image upload errors: " . implode(", ", $errorMessages));
-        }
-        
-        return $uploadedFiles;
-    }
-
+    }    
     private function getCoordinatesFromAddress($address) {
         $apiKey = 'AIzaSyC9pBmG3InVXEsgC5Hee4KPpU8n87dNNzQ';
         
@@ -443,10 +198,73 @@ class Pet {
         oci_free_statement($stmt);
         
         return $pets;
-    }
-
-    public function uploadPetImages($pet_id, $files) {
-        return $this->imageHandler->uploadPetImages($pet_id, $files);
+    }    public function uploadPetImages($pet_id, $files) {
+        try {
+            if (!isset($files['name']) || empty($files['name'][0])) {
+                return ['success' => false, 'errors' => ['No files uploaded']];
+            }
+            
+            $mainUploadDir = dirname(__DIR__) . '/uploads/';
+            
+            // Ensure uploads directory exists
+            if (!file_exists($mainUploadDir)) {
+                if (!mkdir($mainUploadDir, 0777, true)) {
+                    return ['success' => false, 'errors' => ['Failed to create uploads directory']];
+                }
+            }
+            
+            $uploadedFiles = [];
+            $errors = [];
+            
+            for ($i = 0; $i < count($files['name']); $i++) {
+                $fileName = $files['name'][$i];
+                $tmpName = $files['tmp_name'][$i];
+                $error = $files['error'][$i];
+                
+                if ($error === UPLOAD_ERR_OK) {
+                    $fileExtension = pathinfo($fileName, PATHINFO_EXTENSION);
+                    $newFileName = 'pet_' . $pet_id . '_' . uniqid() . '.' . $fileExtension;
+                    $targetPath = $mainUploadDir . $newFileName;
+                    $relativePath = 'uploads/' . $newFileName;
+                    
+                    if (move_uploaded_file($tmpName, $targetPath)) {
+                        chmod($targetPath, 0644);
+                        
+                        // Save to database
+                        $query = "INSERT INTO media (pet_id, url, type) VALUES (:pet_id, :url, 'photo')";
+                        $stmt = oci_parse($this->conn, $query);
+                        
+                        if ($stmt) {
+                            oci_bind_by_name($stmt, ":pet_id", $pet_id);
+                            oci_bind_by_name($stmt, ":url", $relativePath);
+                            
+                            if (oci_execute($stmt)) {
+                                $uploadedFiles[] = $relativePath;
+                            } else {
+                                $errors[] = "Database error for file: $fileName";
+                                if (file_exists($targetPath)) {
+                                    unlink($targetPath);
+                                }
+                            }
+                            oci_free_statement($stmt);
+                        }
+                    } else {
+                        $errors[] = "Failed to move file: $fileName";
+                    }
+                } else {
+                    $errors[] = "Upload error for file: $fileName (Error code: $error)";
+                }
+            }
+            
+            return [
+                'success' => !empty($uploadedFiles),
+                'files' => $uploadedFiles,
+                'errors' => $errors
+            ];
+            
+        } catch (Exception $e) {
+            return ['success' => false, 'errors' => [$e->getMessage()]];
+        }
     }
 
     public function getPetsByUserId($userId) {
@@ -478,6 +296,25 @@ class Pet {
                 throw new Exception("Invalid user ID provided");
             }
 
+            // First check if user is admin
+            $userQuery = "SELECT rol FROM users WHERE id = :user_id";
+            $userStmt = oci_parse($this->conn, $userQuery);
+            if (!$userStmt) {
+                throw new Exception("Database error while preparing user query");
+            }
+            
+            oci_bind_by_name($userStmt, ":user_id", $userId);
+            $executeUser = oci_execute($userStmt);
+            
+            if (!$executeUser) {
+                throw new Exception("Database error while fetching user role");
+            }
+            
+            $userRow = oci_fetch_assoc($userStmt);
+            oci_free_statement($userStmt);
+            
+            $isAdmin = $userRow && strtolower($userRow['ROL']) === 'admin';
+
             // Query pets with essential fields
             $query = "SELECT 
                         p.id, p.name, p.species, p.breed, p.age, 
@@ -485,9 +322,14 @@ class Pet {
                         p.available_for_adoption, p.adoption_address,
                         p.owner_id, p.color, p.marime,
                         p.spayed_neutered
-                     FROM pets p 
-                     WHERE p.owner_id = :user_id 
-                     ORDER BY p.id DESC";
+                     FROM pets p ";
+            
+            // If user is admin, show all pets, otherwise only show their own
+            if (!$isAdmin) {
+                $query .= "WHERE p.owner_id = :user_id ";
+            }
+            
+            $query .= "ORDER BY p.id DESC";
                      
             $stmt = oci_parse($this->conn, $query);
             
@@ -497,9 +339,11 @@ class Pet {
                 throw new Exception("Database error while preparing query");
             }
             
-            // Bind user ID as number to ensure proper comparison
-            $userIdNum = (int)$userId;
-            oci_bind_by_name($stmt, ":user_id", $userIdNum);
+            // Only bind user_id if not admin
+            if (!$isAdmin) {
+                $userIdNum = (int)$userId;
+                oci_bind_by_name($stmt, ":user_id", $userIdNum);
+            }
             
             $execute = oci_execute($stmt);
             
@@ -533,15 +377,53 @@ class Pet {
     
     public function deletePet($petId) {
         try {
-            // Delete related records from all dependent tables in the correct order
+            // First check if the pet exists and get its owner_id
+            $petQuery = "SELECT owner_id FROM pets WHERE id = :pet_id";
+            $petStmt = oci_parse($this->conn, $petQuery);
+            if (!$petStmt) {
+                throw new Exception("Could not parse pet query");
+            }
+            oci_bind_by_name($petStmt, ":pet_id", $petId);
+            $execute = oci_execute($petStmt);
+            if (!$execute) {
+                throw new Exception("Could not execute pet query");
+            }
+            $pet = oci_fetch_assoc($petStmt);
+            oci_free_statement($petStmt);
+
+            if (!$pet) {
+                throw new Exception("Pet not found");
+            }            // Get the current user's ID and role
+            if (session_status() === PHP_SESSION_NONE) {
+                session_start();
+            }
+            $currentUserId = $_SESSION['user_id'] ?? null;
+            if (!$currentUserId) {
+                throw new Exception("User not authenticated");
+            }
+
+            // Check if user is admin
+            $userQuery = "SELECT rol FROM users WHERE id = :user_id";
+            $userStmt = oci_parse($this->conn, $userQuery);
+            if (!$userStmt) {
+                throw new Exception("Could not parse user query");
+            }
+            oci_bind_by_name($userStmt, ":user_id", $currentUserId);
+            $executeUser = oci_execute($userStmt);
+            if (!$executeUser) {
+                throw new Exception("Could not execute user query");
+            }
+            $userRow = oci_fetch_assoc($userStmt);
+            oci_free_statement($userStmt);
+
+            $isAdmin = $userRow && strtolower($userRow['ROL']) === 'admin';            // Check if user has permission to delete
+            if (!$isAdmin && intval($pet['OWNER_ID']) !== intval($currentUserId)) {
+                throw new Exception("You do not have permission to delete this pet");
+            }            // Delete related records from all dependent tables in the correct order
             // Tables with no dependencies from other tables go first
             $dependentTables = [
                 'messages',           // Messages referencing the pet
                 'media',             // Media files
-                'feeding_schedule',   // Feeding schedule
-                'restrictions',       // Restrictions
-                'medical_history',    // Medical history
-                'rss_feed',          // RSS feed entries
                 'adoption_form',      // Adoption forms
                 'adoptions'          // Adoption records (must be after adoption_form)
             ];

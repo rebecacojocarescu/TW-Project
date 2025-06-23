@@ -266,22 +266,22 @@ if (!isset($_SESSION['user_id'])) {
                 container.appendChild(errorDiv);
             }
         }
-        
-        function deletePet(petId) {
+          function deletePet(petId) {
             if (confirm('Are you sure you want to delete this pet?')) {
                 fetch(`../public/api.php?type=pets&action=delete_pet&id=${petId}`, {
                     method: 'POST',
-                })                .then(async response => {
+                })
+                .then(async response => {
                     const text = await response.text();
                     try {
                         const data = JSON.parse(text);
-                        if (!response.ok) {
-                            throw new Error(data.message || `HTTP error! status: ${response.status}`);
+                        if (!response.ok || !data.success) {
+                            throw new Error(data.message || `Error: ${response.status}`);
                         }
                         return data;
                     } catch (e) {
                         console.error('Server response:', text);
-                        throw new Error('Server returned invalid JSON. Check console for details.');
+                        throw new Error(e.message || 'An error occurred while deleting the pet');
                     }
                 })
                 .then(data => {
