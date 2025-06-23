@@ -394,8 +394,8 @@ body, html {
 }
 
 .radio-group {
-    pointer-events: auto; /* Enable interaction with radio buttons */
-    /* Other properties already defined above */
+    /* pointer-events: auto;  Eliminat pentru validare CSS corectă */
+    /* Other properties deja definite mai sus */
 }
 
 .error-messages {
